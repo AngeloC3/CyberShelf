@@ -38,7 +38,6 @@ void main() {
           mediaId: Value(mediaId),
           title: 'Test Game',
           releaseDate: Value(releaseDate),
-          createdAt: DateTime(2026, 8, 18),
           updatedAt: DateTime(2026, 8, 18),
         ),
       );
@@ -65,7 +64,6 @@ void main() {
         MediaMetadataCompanion.insert(
           mediaId: Value(mediaId),
           title: 'First Title',
-          createdAt: DateTime(2026, 8, 18),
           updatedAt: DateTime(2026, 8, 18),
         ),
       );
@@ -75,7 +73,6 @@ void main() {
           MediaMetadataCompanion.insert(
             mediaId: Value(mediaId),
             title: 'Second Title',
-            createdAt: DateTime(2026, 8, 18),
             updatedAt: DateTime(2026, 8, 18),
           ),
         ),

@@ -15,8 +15,6 @@ class MediaMetadata extends Table {
   TextColumn get releaseDate =>
       text().map(const DateOnlyConverter()).nullable()();
 
-  DateTimeColumn get createdAt => dateTime()();
-
   DateTimeColumn get updatedAt => dateTime()();
 
   @override

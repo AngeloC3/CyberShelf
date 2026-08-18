@@ -48,7 +48,6 @@ void main() {
           startedOn: Value(startedOn),
           finishedOn: Value(finishedOn),
           review: const Value('Great game.'),
-          createdAt: DateTime(2026, 8, 18),
           updatedAt: DateTime(2026, 8, 18),
         ),
       );
@@ -78,7 +77,6 @@ void main() {
         MediaUserDataCompanion.insert(
           mediaId: Value(mediaId),
           status: MediaStatus.planned,
-          createdAt: DateTime(2026, 8, 18),
           updatedAt: DateTime(2026, 8, 18),
         ),
       );
@@ -103,7 +101,6 @@ void main() {
         MediaUserDataCompanion.insert(
           mediaId: Value(mediaId),
           status: MediaStatus.planned,
-          createdAt: DateTime(2026, 8, 18),
           updatedAt: DateTime(2026, 8, 18),
         ),
       );
@@ -113,7 +110,6 @@ void main() {
           MediaUserDataCompanion.insert(
             mediaId: Value(mediaId),
             status: MediaStatus.completed,
-            createdAt: DateTime(2026, 8, 18),
             updatedAt: DateTime(2026, 8, 18),
           ),
         ),
@@ -136,7 +132,6 @@ void main() {
             mediaId: Value(mediaId),
             status: MediaStatus.completed,
             rating: const Value(-1),
-            createdAt: DateTime(2026, 8, 18),
             updatedAt: DateTime(2026, 8, 18),
           ),
         ),
@@ -159,7 +154,6 @@ void main() {
             mediaId: Value(mediaId),
             status: MediaStatus.completed,
             rating: const Value(101),
-            createdAt: DateTime(2026, 8, 18),
             updatedAt: DateTime(2026, 8, 18),
           ),
         ),

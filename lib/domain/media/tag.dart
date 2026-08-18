@@ -1,5 +1,5 @@
-class Genre {
-  const Genre({
+class Tag {
+  const Tag({
     required this.id,
     required this.name,
   });
@@ -7,11 +7,11 @@ class Genre {
   final int id;
   final String name;
 
-  Genre copyWith({
+  Tag copyWith({
     int? id,
     String? name,
   }) {
-    return Genre(
+    return Tag(
       id: id ?? this.id,
       name: name ?? this.name,
     );

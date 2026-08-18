@@ -21,8 +21,6 @@ class MediaUserData extends Table {
 
   TextColumn get review => text().nullable()();
 
-  DateTimeColumn get createdAt => dateTime()();
-
   DateTimeColumn get updatedAt => dateTime()();
 
   @override

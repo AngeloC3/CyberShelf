@@ -1,5 +1,5 @@
-class Genre {
-  const Genre({
+class Theme {
+  const Theme({
     required this.id,
     required this.name,
   });
@@ -7,11 +7,11 @@ class Genre {
   final int id;
   final String name;
 
-  Genre copyWith({
+  Theme copyWith({
     int? id,
     String? name,
   }) {
-    return Genre(
+    return Theme(
       id: id ?? this.id,
       name: name ?? this.name,
     );
