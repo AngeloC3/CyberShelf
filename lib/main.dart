@@ -1,16 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:cybershelf/data/database/app_database.dart';
+import 'package:cybershelf/data/database/database_provider.dart';
 
-void main() {
-  runApp(const MainApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final database = await createDatabase();
+
+  runApp(CyberShelfApp(database: database));
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class CyberShelfApp extends StatelessWidget {
+  const CyberShelfApp({
+    super.key,
+    required this.database,
+  });
+
+  final AppDatabase database;
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(body: Center(child: Text('Hello World!'))),
+    return MaterialApp(
+      title: 'CyberShelf',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+        ),
+        useMaterial3: true,
+      ),
+      home: const Scaffold(
+        body: Center(
+          child: Text('CyberShelf'),
+        ),
+      ),
     );
   }
 }
