@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:cybershelf/application/game/game_service.dart';
 import 'package:cybershelf/data/external/igdb_game_source.dart';
 import 'package:cybershelf/domain/game/game_item.dart';
-import 'package:cybershelf/domain/media_status.dart';
 import 'package:cybershelf/presentation/game/external_add_game_page.dart';
 import 'package:cybershelf/presentation/game/manual_add_game_page.dart';
 import 'package:cybershelf/presentation/game/game_detail_page.dart';
+import 'package:cybershelf/presentation/shared/rating_utils.dart';
+import 'package:cybershelf/presentation/shared/status_utils.dart';
+
+enum SortOption {
+  titleAsc,
+  titleDesc,
+  ratingAsc,
+  ratingDesc,
+}
 
 class GamesPage extends StatefulWidget {
   const GamesPage({
@@ -25,15 +33,69 @@ class GamesPage extends StatefulWidget {
 
 class _GamesPageState extends State<GamesPage> {
   late Future<List<GameItem>> _gamesFuture;
+  List<GameItem> _allGames = [];
+  List<GameItem> _filteredGames = [];
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+  SortOption _sortOption = SortOption.titleAsc;
 
   @override
   void initState() {
     super.initState();
     _loadGames();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _loadGames() {
-    _gamesFuture = widget.gameService.getAll();
+    _gamesFuture = widget.gameService.getAll().then((games) {
+      _allGames = games;
+      _filteredGames = games;
+      return games;
+    });
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.toLowerCase().trim();
+    setState(() {
+      _isSearching = query.isNotEmpty;
+      if (query.isEmpty) {
+        _filteredGames = _allGames;
+      } else {
+        _filteredGames = _allGames.where((game) {
+          return game.media.metadata.title.toLowerCase().contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  List<GameItem> _getSortedGames(List<GameItem> games) {
+    switch (_sortOption) {
+      case SortOption.titleAsc:
+        return [...games]..sort((a, b) =>
+            a.media.metadata.title.compareTo(b.media.metadata.title));
+      case SortOption.titleDesc:
+        return [...games]..sort((a, b) =>
+            b.media.metadata.title.compareTo(a.media.metadata.title));
+      case SortOption.ratingAsc:
+        return [...games]..sort((a, b) {
+          final aRating = a.media.userData.rating ?? -1;
+          final bRating = b.media.userData.rating ?? -1;
+          return aRating.compareTo(bRating);
+        });
+      case SortOption.ratingDesc:
+        return [...games]..sort((a, b) {
+          final aRating = a.media.userData.rating ?? -1;
+          final bRating = b.media.userData.rating ?? -1;
+          return bRating.compareTo(aRating);
+        });
+    }
   }
 
   Future<void> _refresh() async {
@@ -41,13 +103,57 @@ class _GamesPageState extends State<GamesPage> {
       _loadGames();
     });
     await _gamesFuture;
+    // Reset search when refreshing
+    _searchController.clear();
+    setState(() {
+      _filteredGames = _allGames;
+      _isSearching = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Games'),
+        title: _isSearching
+            ? TextField(
+          controller: _searchController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Search games...',
+            hintStyle: TextStyle(color: Colors.white70),
+            border: InputBorder.none,
+          ),
+          style: const TextStyle(color: Colors.white),
+        )
+            : const Text('Games'),
+        actions: [
+          if (_isSearching)
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                _searchController.clear();
+                setState(() {
+                  _isSearching = false;
+                  _filteredGames = _allGames;
+                });
+              },
+            )
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.sort),
+              onPressed: _showSortOptions,
+            ),
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                setState(() {
+                  _isSearching = true;
+                });
+              },
+            ),
+          ],
+        ],
       ),
       body: FutureBuilder<List<GameItem>>(
         key: ValueKey(_gamesFuture),
@@ -88,7 +194,37 @@ class _GamesPageState extends State<GamesPage> {
             );
           }
 
-          final games = snapshot.data ?? [];
+          final games = _getSortedGames(_isSearching ? _filteredGames : _allGames);
+
+          if (games.isEmpty && _isSearching) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.search_off,
+                    size: 64,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No games match your search',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Try a different search term',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
 
           if (games.isEmpty) {
             return Center(
@@ -217,6 +353,67 @@ class _GamesPageState extends State<GamesPage> {
       ),
     );
   }
+
+  void _showSortOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.sort_by_alpha),
+              title: const Text('Title A-Z'),
+              trailing: _sortOption == SortOption.titleAsc
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () {
+                setState(() => _sortOption = SortOption.titleAsc);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.sort_by_alpha),
+              title: const Text('Title Z-A'),
+              trailing: _sortOption == SortOption.titleDesc
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () {
+                setState(() => _sortOption = SortOption.titleDesc);
+                Navigator.pop(context);
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.star),
+              title: const Text('Rating (Low to High)'),
+              trailing: _sortOption == SortOption.ratingAsc
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () {
+                setState(() => _sortOption = SortOption.ratingAsc);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.star),
+              title: const Text('Rating (High to Low)'),
+              trailing: _sortOption == SortOption.ratingDesc
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () {
+                setState(() => _sortOption = SortOption.ratingDesc);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _GameListTile extends StatelessWidget {
@@ -234,6 +431,7 @@ class _GameListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final metadata = game.media.metadata;
     final userData = game.media.userData;
+    final rating = userData.rating;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -269,10 +467,17 @@ class _GameListTile extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(_statusLabel(userData.status)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            StatusUtils.buildCompactIndicator(userData.status),
+            if (rating != null) ...[
+              const SizedBox(height: 4),
+              RatingUtils.buildCompactStars(rating, size: 14),
+            ],
+          ],
         ),
+        trailing: RatingUtils.buildCompactRatingCircle(rating, size: 36),
         onTap: () async {
           final result = await Navigator.push<bool>(
             context,
@@ -291,14 +496,5 @@ class _GameListTile extends StatelessWidget {
         },
       ),
     );
-  }
-
-  String _statusLabel(MediaStatus status) {
-    return switch (status) {
-      MediaStatus.planned => 'Planned',
-      MediaStatus.inProgress => 'In Progress',
-      MediaStatus.completed => 'Completed',
-      MediaStatus.dropped => 'Dropped',
-    };
   }
 }

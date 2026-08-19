@@ -7,6 +7,8 @@ import 'package:cybershelf/domain/game/game_platform.dart';
 import 'package:cybershelf/domain/media/tag.dart';
 import 'package:cybershelf/domain/media_status.dart';
 import 'package:cybershelf/domain/media/contributor.dart' as domain;
+import 'package:cybershelf/presentation/shared/rating_utils.dart';
+import 'package:cybershelf/presentation/shared/status_utils.dart';
 
 class GameDetailPage extends StatefulWidget {
   const GameDetailPage({
@@ -101,6 +103,10 @@ class _GameDetailPageState extends State<GameDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(game),
+                const SizedBox(height: 16),
+                _buildRatingSection(game),
+                const SizedBox(height: 16),
+                _buildReviewSection(game),
                 const SizedBox(height: 24),
                 _buildMetadataSection(game),
                 const SizedBox(height: 24),
@@ -171,20 +177,7 @@ class _GameDetailPageState extends State<GameDetailPage> {
                 ),
               ],
               const SizedBox(height: 8),
-              _buildStatusChip(game.media.userData.status),
-              if (game.media.userData.rating != null) ...[
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.star, size: 16, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${game.media.userData.rating}/100',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ],
+              StatusUtils.buildChip(game.media.userData.status),
             ],
           ),
         ),
@@ -192,25 +185,71 @@ class _GameDetailPageState extends State<GameDetailPage> {
     );
   }
 
-  Widget _buildStatusChip(MediaStatus status) {
-    final label = switch (status) {
-      MediaStatus.planned => 'Planned',
-      MediaStatus.inProgress => 'In Progress',
-      MediaStatus.completed => 'Completed',
-      MediaStatus.dropped => 'Dropped',
-    };
+  Widget _buildRatingSection(GameItem game) {
+    final rating = game.media.userData.rating;
 
-    final color = switch (status) {
-      MediaStatus.planned => Colors.blue,
-      MediaStatus.inProgress => Colors.orange,
-      MediaStatus.completed => Colors.green,
-      MediaStatus.dropped => Colors.red,
-    };
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: RatingUtils.buildRatingDisplay(
+                rating: rating,
+                context: context,
+                circleSize: 80,
+                starSize: 20,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit, size: 20),
+              onPressed: () => _showEditUserDataDialog(game),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    return Chip(
-      label: Text(label),
-      backgroundColor: color.withAlpha(51),
-      side: BorderSide.none,
+  Widget _buildReviewSection(GameItem game) {
+    final review = game.media.userData.review;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Review',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  onPressed: () => _showEditUserDataDialog(game),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (review != null && review.isNotEmpty)
+              Text(
+                review,
+                style: Theme.of(context).textTheme.bodyMedium,
+              )
+            else
+              Text(
+                'No review yet. Tap edit to write one.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -266,15 +305,11 @@ class _GameDetailPageState extends State<GameDetailPage> {
               ],
             ),
             const SizedBox(height: 12),
-            _buildInfoRow('Status', _statusLabel(game.media.userData.status)),
-            if (game.media.userData.rating != null)
-              _buildInfoRow('Rating', '${game.media.userData.rating}/100'),
+            _buildInfoRow('Status', StatusUtils.getLabel(game.media.userData.status)),
             if (game.media.userData.startedOn != null)
               _buildInfoRow('Started', game.media.userData.startedOn.toString()),
             if (game.media.userData.finishedOn != null)
               _buildInfoRow('Finished', game.media.userData.finishedOn.toString()),
-            if (game.media.userData.review != null)
-              _buildInfoRow('Review', game.media.userData.review!),
             if (game.media.userData.tags.isNotEmpty)
               _buildInfoRow(
                 'Tags',
@@ -450,15 +485,6 @@ class _GameDetailPageState extends State<GameDetailPage> {
         ],
       ),
     );
-  }
-
-  String _statusLabel(MediaStatus status) {
-    return switch (status) {
-      MediaStatus.planned => 'Planned',
-      MediaStatus.inProgress => 'In Progress',
-      MediaStatus.completed => 'Completed',
-      MediaStatus.dropped => 'Dropped',
-    };
   }
 
   String _gameModeLabel(GameMode mode) {
@@ -653,7 +679,7 @@ class _EditUserDataSheetState extends State<_EditUserDataSheet> {
             items: MediaStatus.values.map((status) {
               return DropdownMenuItem(
                 value: status,
-                child: Text(_statusLabel(status)),
+                child: Text(StatusUtils.getLabel(status)),
               );
             }).toList(),
             onChanged: (value) {
@@ -868,15 +894,6 @@ class _EditUserDataSheetState extends State<_EditUserDataSheet> {
         );
       }
     }
-  }
-
-  String _statusLabel(MediaStatus status) {
-    return switch (status) {
-      MediaStatus.planned => 'Planned',
-      MediaStatus.inProgress => 'In Progress',
-      MediaStatus.completed => 'Completed',
-      MediaStatus.dropped => 'Dropped',
-    };
   }
 }
 
