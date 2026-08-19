@@ -6,6 +6,8 @@ import 'package:cybershelf/data/database/tables/media_user_data_table.dart';
 import 'package:cybershelf/domain/date_only.dart';
 import 'package:cybershelf/domain/media_status.dart';
 import 'package:cybershelf/domain/media_type.dart';
+import 'package:cybershelf/domain/game/game_mode.dart';
+import 'package:cybershelf/domain/game/game_platform.dart';
 import 'package:cybershelf/data/database/tables/genres_table.dart';
 import 'package:cybershelf/data/database/tables/media_genres_table.dart';
 import 'package:cybershelf/data/database/tables/external_ids_table.dart';

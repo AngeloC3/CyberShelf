@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cybershelf/data/database/app_database.dart';
+import 'package:cybershelf/domain/game/game_mode.dart';
 import 'package:cybershelf/domain/media_type.dart';
 
 import '../test_database.dart';
@@ -35,7 +36,7 @@ void main() {
       await database.into(database.gameAvailableModes).insert(
         GameAvailableModesCompanion.insert(
           mediaId: mediaId,
-          mode: 'single_player',
+          mode: GameMode.singlePlayer,
         ),
       );
 
@@ -44,7 +45,7 @@ void main() {
           .getSingle();
 
       expect(mode.mediaId, mediaId);
-      expect(mode.mode, 'single_player');
+      expect(mode.mode, GameMode.singlePlayer);
     });
 
     test('allows multiple available modes for the same game', () async {
@@ -65,14 +66,14 @@ void main() {
       await database.into(database.gameAvailableModes).insert(
         GameAvailableModesCompanion.insert(
           mediaId: mediaId,
-          mode: 'single_player',
+          mode: GameMode.singlePlayer,
         ),
       );
 
       await database.into(database.gameAvailableModes).insert(
         GameAvailableModesCompanion.insert(
           mediaId: mediaId,
-          mode: 'multiplayer',
+          mode: GameMode.multiplayer,
         ),
       );
 
@@ -83,7 +84,7 @@ void main() {
       expect(modes, hasLength(2));
       expect(
         modes.map((m) => m.mode),
-        containsAll(['single_player', 'multiplayer']),
+        containsAll([GameMode.singlePlayer, GameMode.multiplayer]),
       );
     });
 
@@ -106,7 +107,7 @@ void main() {
           await database.into(database.gameAvailableModes).insert(
             GameAvailableModesCompanion.insert(
               mediaId: mediaId,
-              mode: 'multiplayer',
+              mode: GameMode.multiplayer,
             ),
           );
 
@@ -114,7 +115,7 @@ void main() {
                 () => database.into(database.gameAvailableModes).insert(
               GameAvailableModesCompanion.insert(
                 mediaId: mediaId,
-                mode: 'multiplayer',
+                mode: GameMode.multiplayer,
               ),
             ),
             throwsA(isA<Exception>()),
@@ -127,7 +128,7 @@ void main() {
                 () => database.into(database.gameAvailableModes).insert(
               GameAvailableModesCompanion.insert(
                 mediaId: 999,
-                mode: 'single_player',
+                mode: GameMode.singlePlayer,
               ),
             ),
             throwsA(isA<Exception>()),
@@ -152,7 +153,7 @@ void main() {
       await database.into(database.gameAvailableModes).insert(
         GameAvailableModesCompanion.insert(
           mediaId: mediaId,
-          mode: 'single_player',
+          mode: GameMode.singlePlayer,
         ),
       );
 

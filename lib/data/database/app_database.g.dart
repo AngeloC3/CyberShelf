@@ -2439,15 +2439,15 @@ class $GameAvailableModesTable extends GameAvailableModes
       'REFERENCES games (media_id) ON DELETE CASCADE',
     ),
   );
-  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
   @override
-  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
-    'mode',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
+  late final GeneratedColumnWithTypeConverter<GameMode, String> mode =
+      GeneratedColumn<String>(
+        'mode',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<GameMode>($GameAvailableModesTable.$convertermode);
   @override
   List<GeneratedColumn> get $columns => [mediaId, mode];
   @override
@@ -2470,14 +2470,6 @@ class $GameAvailableModesTable extends GameAvailableModes
     } else if (isInserting) {
       context.missing(_mediaIdMeta);
     }
-    if (data.containsKey('mode')) {
-      context.handle(
-        _modeMeta,
-        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_modeMeta);
-    }
     return context;
   }
 
@@ -2491,10 +2483,12 @@ class $GameAvailableModesTable extends GameAvailableModes
         DriftSqlType.int,
         data['${effectivePrefix}media_id'],
       )!,
-      mode: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}mode'],
-      )!,
+      mode: $GameAvailableModesTable.$convertermode.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}mode'],
+        )!,
+      ),
     );
   }
 
@@ -2502,18 +2496,25 @@ class $GameAvailableModesTable extends GameAvailableModes
   $GameAvailableModesTable createAlias(String alias) {
     return $GameAvailableModesTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<GameMode, String, String> $convertermode =
+      const EnumNameConverter<GameMode>(GameMode.values);
 }
 
 class GameAvailableMode extends DataClass
     implements Insertable<GameAvailableMode> {
   final int mediaId;
-  final String mode;
+  final GameMode mode;
   const GameAvailableMode({required this.mediaId, required this.mode});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['media_id'] = Variable<int>(mediaId);
-    map['mode'] = Variable<String>(mode);
+    {
+      map['mode'] = Variable<String>(
+        $GameAvailableModesTable.$convertermode.toSql(mode),
+      );
+    }
     return map;
   }
 
@@ -2531,7 +2532,9 @@ class GameAvailableMode extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return GameAvailableMode(
       mediaId: serializer.fromJson<int>(json['mediaId']),
-      mode: serializer.fromJson<String>(json['mode']),
+      mode: $GameAvailableModesTable.$convertermode.fromJson(
+        serializer.fromJson<String>(json['mode']),
+      ),
     );
   }
   @override
@@ -2539,14 +2542,17 @@ class GameAvailableMode extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'mediaId': serializer.toJson<int>(mediaId),
-      'mode': serializer.toJson<String>(mode),
+      'mode': serializer.toJson<String>(
+        $GameAvailableModesTable.$convertermode.toJson(mode),
+      ),
     };
   }
 
-  GameAvailableMode copyWith({int? mediaId, String? mode}) => GameAvailableMode(
-    mediaId: mediaId ?? this.mediaId,
-    mode: mode ?? this.mode,
-  );
+  GameAvailableMode copyWith({int? mediaId, GameMode? mode}) =>
+      GameAvailableMode(
+        mediaId: mediaId ?? this.mediaId,
+        mode: mode ?? this.mode,
+      );
   GameAvailableMode copyWithCompanion(GameAvailableModesCompanion data) {
     return GameAvailableMode(
       mediaId: data.mediaId.present ? data.mediaId.value : this.mediaId,
@@ -2575,7 +2581,7 @@ class GameAvailableMode extends DataClass
 
 class GameAvailableModesCompanion extends UpdateCompanion<GameAvailableMode> {
   final Value<int> mediaId;
-  final Value<String> mode;
+  final Value<GameMode> mode;
   final Value<int> rowid;
   const GameAvailableModesCompanion({
     this.mediaId = const Value.absent(),
@@ -2584,7 +2590,7 @@ class GameAvailableModesCompanion extends UpdateCompanion<GameAvailableMode> {
   });
   GameAvailableModesCompanion.insert({
     required int mediaId,
-    required String mode,
+    required GameMode mode,
     this.rowid = const Value.absent(),
   }) : mediaId = Value(mediaId),
        mode = Value(mode);
@@ -2602,7 +2608,7 @@ class GameAvailableModesCompanion extends UpdateCompanion<GameAvailableMode> {
 
   GameAvailableModesCompanion copyWith({
     Value<int>? mediaId,
-    Value<String>? mode,
+    Value<GameMode>? mode,
     Value<int>? rowid,
   }) {
     return GameAvailableModesCompanion(
@@ -2619,7 +2625,9 @@ class GameAvailableModesCompanion extends UpdateCompanion<GameAvailableMode> {
       map['media_id'] = Variable<int>(mediaId.value);
     }
     if (mode.present) {
-      map['mode'] = Variable<String>(mode.value);
+      map['mode'] = Variable<String>(
+        $GameAvailableModesTable.$convertermode.toSql(mode.value),
+      );
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2658,15 +2666,15 @@ class $GamePlayedModesTable extends GamePlayedModes
       'REFERENCES games (media_id) ON DELETE CASCADE',
     ),
   );
-  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
   @override
-  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
-    'mode',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
+  late final GeneratedColumnWithTypeConverter<GameMode, String> mode =
+      GeneratedColumn<String>(
+        'mode',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<GameMode>($GamePlayedModesTable.$convertermode);
   @override
   List<GeneratedColumn> get $columns => [mediaId, mode];
   @override
@@ -2689,14 +2697,6 @@ class $GamePlayedModesTable extends GamePlayedModes
     } else if (isInserting) {
       context.missing(_mediaIdMeta);
     }
-    if (data.containsKey('mode')) {
-      context.handle(
-        _modeMeta,
-        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_modeMeta);
-    }
     return context;
   }
 
@@ -2710,10 +2710,12 @@ class $GamePlayedModesTable extends GamePlayedModes
         DriftSqlType.int,
         data['${effectivePrefix}media_id'],
       )!,
-      mode: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}mode'],
-      )!,
+      mode: $GamePlayedModesTable.$convertermode.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}mode'],
+        )!,
+      ),
     );
   }
 
@@ -2721,17 +2723,24 @@ class $GamePlayedModesTable extends GamePlayedModes
   $GamePlayedModesTable createAlias(String alias) {
     return $GamePlayedModesTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<GameMode, String, String> $convertermode =
+      const EnumNameConverter<GameMode>(GameMode.values);
 }
 
 class GamePlayedMode extends DataClass implements Insertable<GamePlayedMode> {
   final int mediaId;
-  final String mode;
+  final GameMode mode;
   const GamePlayedMode({required this.mediaId, required this.mode});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['media_id'] = Variable<int>(mediaId);
-    map['mode'] = Variable<String>(mode);
+    {
+      map['mode'] = Variable<String>(
+        $GamePlayedModesTable.$convertermode.toSql(mode),
+      );
+    }
     return map;
   }
 
@@ -2746,7 +2755,9 @@ class GamePlayedMode extends DataClass implements Insertable<GamePlayedMode> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return GamePlayedMode(
       mediaId: serializer.fromJson<int>(json['mediaId']),
-      mode: serializer.fromJson<String>(json['mode']),
+      mode: $GamePlayedModesTable.$convertermode.fromJson(
+        serializer.fromJson<String>(json['mode']),
+      ),
     );
   }
   @override
@@ -2754,11 +2765,13 @@ class GamePlayedMode extends DataClass implements Insertable<GamePlayedMode> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'mediaId': serializer.toJson<int>(mediaId),
-      'mode': serializer.toJson<String>(mode),
+      'mode': serializer.toJson<String>(
+        $GamePlayedModesTable.$convertermode.toJson(mode),
+      ),
     };
   }
 
-  GamePlayedMode copyWith({int? mediaId, String? mode}) =>
+  GamePlayedMode copyWith({int? mediaId, GameMode? mode}) =>
       GamePlayedMode(mediaId: mediaId ?? this.mediaId, mode: mode ?? this.mode);
   GamePlayedMode copyWithCompanion(GamePlayedModesCompanion data) {
     return GamePlayedMode(
@@ -2788,7 +2801,7 @@ class GamePlayedMode extends DataClass implements Insertable<GamePlayedMode> {
 
 class GamePlayedModesCompanion extends UpdateCompanion<GamePlayedMode> {
   final Value<int> mediaId;
-  final Value<String> mode;
+  final Value<GameMode> mode;
   final Value<int> rowid;
   const GamePlayedModesCompanion({
     this.mediaId = const Value.absent(),
@@ -2797,7 +2810,7 @@ class GamePlayedModesCompanion extends UpdateCompanion<GamePlayedMode> {
   });
   GamePlayedModesCompanion.insert({
     required int mediaId,
-    required String mode,
+    required GameMode mode,
     this.rowid = const Value.absent(),
   }) : mediaId = Value(mediaId),
        mode = Value(mode);
@@ -2815,7 +2828,7 @@ class GamePlayedModesCompanion extends UpdateCompanion<GamePlayedMode> {
 
   GamePlayedModesCompanion copyWith({
     Value<int>? mediaId,
-    Value<String>? mode,
+    Value<GameMode>? mode,
     Value<int>? rowid,
   }) {
     return GamePlayedModesCompanion(
@@ -2832,7 +2845,9 @@ class GamePlayedModesCompanion extends UpdateCompanion<GamePlayedMode> {
       map['media_id'] = Variable<int>(mediaId.value);
     }
     if (mode.present) {
-      map['mode'] = Variable<String>(mode.value);
+      map['mode'] = Variable<String>(
+        $GamePlayedModesTable.$convertermode.toSql(mode.value),
+      );
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2871,17 +2886,17 @@ class $GamePlayedPlatformsTable extends GamePlayedPlatforms
       'REFERENCES games (media_id) ON DELETE CASCADE',
     ),
   );
-  static const VerificationMeta _platformMeta = const VerificationMeta(
-    'platform',
-  );
   @override
-  late final GeneratedColumn<String> platform = GeneratedColumn<String>(
-    'platform',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
+  late final GeneratedColumnWithTypeConverter<GamePlatform, String> platform =
+      GeneratedColumn<String>(
+        'platform',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<GamePlatform>(
+        $GamePlayedPlatformsTable.$converterplatform,
+      );
   @override
   List<GeneratedColumn> get $columns => [mediaId, platform];
   @override
@@ -2904,14 +2919,6 @@ class $GamePlayedPlatformsTable extends GamePlayedPlatforms
     } else if (isInserting) {
       context.missing(_mediaIdMeta);
     }
-    if (data.containsKey('platform')) {
-      context.handle(
-        _platformMeta,
-        platform.isAcceptableOrUnknown(data['platform']!, _platformMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_platformMeta);
-    }
     return context;
   }
 
@@ -2925,10 +2932,12 @@ class $GamePlayedPlatformsTable extends GamePlayedPlatforms
         DriftSqlType.int,
         data['${effectivePrefix}media_id'],
       )!,
-      platform: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}platform'],
-      )!,
+      platform: $GamePlayedPlatformsTable.$converterplatform.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}platform'],
+        )!,
+      ),
     );
   }
 
@@ -2936,18 +2945,25 @@ class $GamePlayedPlatformsTable extends GamePlayedPlatforms
   $GamePlayedPlatformsTable createAlias(String alias) {
     return $GamePlayedPlatformsTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<GamePlatform, String, String> $converterplatform =
+      const EnumNameConverter<GamePlatform>(GamePlatform.values);
 }
 
 class GamePlayedPlatform extends DataClass
     implements Insertable<GamePlayedPlatform> {
   final int mediaId;
-  final String platform;
+  final GamePlatform platform;
   const GamePlayedPlatform({required this.mediaId, required this.platform});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['media_id'] = Variable<int>(mediaId);
-    map['platform'] = Variable<String>(platform);
+    {
+      map['platform'] = Variable<String>(
+        $GamePlayedPlatformsTable.$converterplatform.toSql(platform),
+      );
+    }
     return map;
   }
 
@@ -2965,7 +2981,9 @@ class GamePlayedPlatform extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return GamePlayedPlatform(
       mediaId: serializer.fromJson<int>(json['mediaId']),
-      platform: serializer.fromJson<String>(json['platform']),
+      platform: $GamePlayedPlatformsTable.$converterplatform.fromJson(
+        serializer.fromJson<String>(json['platform']),
+      ),
     );
   }
   @override
@@ -2973,11 +2991,13 @@ class GamePlayedPlatform extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'mediaId': serializer.toJson<int>(mediaId),
-      'platform': serializer.toJson<String>(platform),
+      'platform': serializer.toJson<String>(
+        $GamePlayedPlatformsTable.$converterplatform.toJson(platform),
+      ),
     };
   }
 
-  GamePlayedPlatform copyWith({int? mediaId, String? platform}) =>
+  GamePlayedPlatform copyWith({int? mediaId, GamePlatform? platform}) =>
       GamePlayedPlatform(
         mediaId: mediaId ?? this.mediaId,
         platform: platform ?? this.platform,
@@ -3010,7 +3030,7 @@ class GamePlayedPlatform extends DataClass
 
 class GamePlayedPlatformsCompanion extends UpdateCompanion<GamePlayedPlatform> {
   final Value<int> mediaId;
-  final Value<String> platform;
+  final Value<GamePlatform> platform;
   final Value<int> rowid;
   const GamePlayedPlatformsCompanion({
     this.mediaId = const Value.absent(),
@@ -3019,7 +3039,7 @@ class GamePlayedPlatformsCompanion extends UpdateCompanion<GamePlayedPlatform> {
   });
   GamePlayedPlatformsCompanion.insert({
     required int mediaId,
-    required String platform,
+    required GamePlatform platform,
     this.rowid = const Value.absent(),
   }) : mediaId = Value(mediaId),
        platform = Value(platform);
@@ -3037,7 +3057,7 @@ class GamePlayedPlatformsCompanion extends UpdateCompanion<GamePlayedPlatform> {
 
   GamePlayedPlatformsCompanion copyWith({
     Value<int>? mediaId,
-    Value<String>? platform,
+    Value<GamePlatform>? platform,
     Value<int>? rowid,
   }) {
     return GamePlayedPlatformsCompanion(
@@ -3054,7 +3074,9 @@ class GamePlayedPlatformsCompanion extends UpdateCompanion<GamePlayedPlatform> {
       map['media_id'] = Variable<int>(mediaId.value);
     }
     if (platform.present) {
-      map['platform'] = Variable<String>(platform.value);
+      map['platform'] = Variable<String>(
+        $GamePlayedPlatformsTable.$converterplatform.toSql(platform.value),
+      );
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -7927,13 +7949,13 @@ typedef $$GamesTableProcessedTableManager =
 typedef $$GameAvailableModesTableCreateCompanionBuilder =
     GameAvailableModesCompanion Function({
       required int mediaId,
-      required String mode,
+      required GameMode mode,
       Value<int> rowid,
     });
 typedef $$GameAvailableModesTableUpdateCompanionBuilder =
     GameAvailableModesCompanion Function({
       Value<int> mediaId,
-      Value<String> mode,
+      Value<GameMode> mode,
       Value<int> rowid,
     });
 
@@ -7946,10 +7968,11 @@ class $$GameAvailableModesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get mode => $composableBuilder(
-    column: $table.mode,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnWithTypeConverterFilters<GameMode, GameMode, String> get mode =>
+      $composableBuilder(
+        column: $table.mode,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 }
 
 class $$GameAvailableModesTableOrderingComposer
@@ -7976,7 +7999,7 @@ class $$GameAvailableModesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get mode =>
+  GeneratedColumnWithTypeConverter<GameMode, String> get mode =>
       $composableBuilder(column: $table.mode, builder: (column) => column);
 }
 
@@ -8021,7 +8044,7 @@ class $$GameAvailableModesTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> mediaId = const Value.absent(),
-                Value<String> mode = const Value.absent(),
+                Value<GameMode> mode = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => GameAvailableModesCompanion(
                 mediaId: mediaId,
@@ -8031,7 +8054,7 @@ class $$GameAvailableModesTableTableManager
           createCompanionCallback:
               ({
                 required int mediaId,
-                required String mode,
+                required GameMode mode,
                 Value<int> rowid = const Value.absent(),
               }) => GameAvailableModesCompanion.insert(
                 mediaId: mediaId,
@@ -8070,13 +8093,13 @@ typedef $$GameAvailableModesTableProcessedTableManager =
 typedef $$GamePlayedModesTableCreateCompanionBuilder =
     GamePlayedModesCompanion Function({
       required int mediaId,
-      required String mode,
+      required GameMode mode,
       Value<int> rowid,
     });
 typedef $$GamePlayedModesTableUpdateCompanionBuilder =
     GamePlayedModesCompanion Function({
       Value<int> mediaId,
-      Value<String> mode,
+      Value<GameMode> mode,
       Value<int> rowid,
     });
 
@@ -8089,10 +8112,11 @@ class $$GamePlayedModesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get mode => $composableBuilder(
-    column: $table.mode,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnWithTypeConverterFilters<GameMode, GameMode, String> get mode =>
+      $composableBuilder(
+        column: $table.mode,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 }
 
 class $$GamePlayedModesTableOrderingComposer
@@ -8119,7 +8143,7 @@ class $$GamePlayedModesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get mode =>
+  GeneratedColumnWithTypeConverter<GameMode, String> get mode =>
       $composableBuilder(column: $table.mode, builder: (column) => column);
 }
 
@@ -8161,7 +8185,7 @@ class $$GamePlayedModesTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> mediaId = const Value.absent(),
-                Value<String> mode = const Value.absent(),
+                Value<GameMode> mode = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => GamePlayedModesCompanion(
                 mediaId: mediaId,
@@ -8171,7 +8195,7 @@ class $$GamePlayedModesTableTableManager
           createCompanionCallback:
               ({
                 required int mediaId,
-                required String mode,
+                required GameMode mode,
                 Value<int> rowid = const Value.absent(),
               }) => GamePlayedModesCompanion.insert(
                 mediaId: mediaId,
@@ -8206,13 +8230,13 @@ typedef $$GamePlayedModesTableProcessedTableManager =
 typedef $$GamePlayedPlatformsTableCreateCompanionBuilder =
     GamePlayedPlatformsCompanion Function({
       required int mediaId,
-      required String platform,
+      required GamePlatform platform,
       Value<int> rowid,
     });
 typedef $$GamePlayedPlatformsTableUpdateCompanionBuilder =
     GamePlayedPlatformsCompanion Function({
       Value<int> mediaId,
-      Value<String> platform,
+      Value<GamePlatform> platform,
       Value<int> rowid,
     });
 
@@ -8225,9 +8249,10 @@ class $$GamePlayedPlatformsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get platform => $composableBuilder(
+  ColumnWithTypeConverterFilters<GamePlatform, GamePlatform, String>
+  get platform => $composableBuilder(
     column: $table.platform,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 }
 
@@ -8255,7 +8280,7 @@ class $$GamePlayedPlatformsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get platform =>
+  GeneratedColumnWithTypeConverter<GamePlatform, String> get platform =>
       $composableBuilder(column: $table.platform, builder: (column) => column);
 }
 
@@ -8303,7 +8328,7 @@ class $$GamePlayedPlatformsTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> mediaId = const Value.absent(),
-                Value<String> platform = const Value.absent(),
+                Value<GamePlatform> platform = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => GamePlayedPlatformsCompanion(
                 mediaId: mediaId,
@@ -8313,7 +8338,7 @@ class $$GamePlayedPlatformsTableTableManager
           createCompanionCallback:
               ({
                 required int mediaId,
-                required String platform,
+                required GamePlatform platform,
                 Value<int> rowid = const Value.absent(),
               }) => GamePlayedPlatformsCompanion.insert(
                 mediaId: mediaId,

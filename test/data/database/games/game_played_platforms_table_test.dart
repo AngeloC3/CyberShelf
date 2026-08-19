@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cybershelf/data/database/app_database.dart';
+import 'package:cybershelf/domain/game/game_platform.dart';
 import 'package:cybershelf/domain/media_type.dart';
 
 import '../test_database.dart';
@@ -35,7 +36,7 @@ void main() {
       await database.into(database.gamePlayedPlatforms).insert(
         GamePlayedPlatformsCompanion.insert(
           mediaId: mediaId,
-          platform: 'pc',
+          platform: GamePlatform.pc,
         ),
       );
 
@@ -44,7 +45,7 @@ void main() {
           .getSingle();
 
       expect(platform.mediaId, mediaId);
-      expect(platform.platform, 'pc');
+      expect(platform.platform, GamePlatform.pc);
     });
 
     test('allows multiple played platforms for the same game', () async {
@@ -65,14 +66,14 @@ void main() {
       await database.into(database.gamePlayedPlatforms).insert(
         GamePlayedPlatformsCompanion.insert(
           mediaId: mediaId,
-          platform: 'pc',
+          platform: GamePlatform.pc,
         ),
       );
 
       await database.into(database.gamePlayedPlatforms).insert(
         GamePlayedPlatformsCompanion.insert(
           mediaId: mediaId,
-          platform: 'switch',
+          platform: GamePlatform.nintendoSwitch,
         ),
       );
 
@@ -83,7 +84,7 @@ void main() {
       expect(platforms, hasLength(2));
       expect(
         platforms.map((p) => p.platform),
-        containsAll(['pc', 'switch']),
+        containsAll([GamePlatform.pc, GamePlatform.nintendoSwitch]),
       );
     });
 
@@ -106,7 +107,7 @@ void main() {
           await database.into(database.gamePlayedPlatforms).insert(
             GamePlayedPlatformsCompanion.insert(
               mediaId: mediaId,
-              platform: 'pc',
+              platform: GamePlatform.pc,
             ),
           );
 
@@ -114,7 +115,7 @@ void main() {
                 () => database.into(database.gamePlayedPlatforms).insert(
               GamePlayedPlatformsCompanion.insert(
                 mediaId: mediaId,
-                platform: 'pc',
+                platform: GamePlatform.pc,
               ),
             ),
             throwsA(isA<Exception>()),
@@ -127,7 +128,7 @@ void main() {
                 () => database.into(database.gamePlayedPlatforms).insert(
               GamePlayedPlatformsCompanion.insert(
                 mediaId: 999,
-                platform: 'pc',
+                platform: GamePlatform.pc,
               ),
             ),
             throwsA(isA<Exception>()),
@@ -152,7 +153,7 @@ void main() {
       await database.into(database.gamePlayedPlatforms).insert(
         GamePlayedPlatformsCompanion.insert(
           mediaId: mediaId,
-          platform: 'pc',
+          platform: GamePlatform.pc,
         ),
       );
 
