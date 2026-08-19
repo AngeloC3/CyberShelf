@@ -12,6 +12,8 @@ dependencies:
   drift:
   path:
   path_provider:
+  http:
+  flutter_dotenv:
 
 dev_dependencies:
   flutter_test:
@@ -19,6 +21,9 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   drift_dev:
   build_runner:
+  mockito:
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env
