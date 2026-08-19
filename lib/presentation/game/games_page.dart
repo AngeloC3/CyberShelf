@@ -3,7 +3,8 @@ import 'package:cybershelf/application/game/game_service.dart';
 import 'package:cybershelf/data/external/igdb_game_source.dart';
 import 'package:cybershelf/domain/game/game_item.dart';
 import 'package:cybershelf/domain/media_status.dart';
-import 'package:cybershelf/presentation/game/add_game_page.dart';
+import 'package:cybershelf/presentation/game/external_add_game_page.dart';
+import 'package:cybershelf/presentation/game/manual_add_game_page.dart';
 import 'package:cybershelf/presentation/game/game_detail_page.dart';
 
 class GamesPage extends StatefulWidget {
@@ -28,14 +29,17 @@ class _GamesPageState extends State<GamesPage> {
   @override
   void initState() {
     super.initState();
+    _loadGames();
+  }
+
+  void _loadGames() {
     _gamesFuture = widget.gameService.getAll();
   }
 
   Future<void> _refresh() async {
     setState(() {
-      _gamesFuture = widget.gameService.getAll();
+      _loadGames();
     });
-
     await _gamesFuture;
   }
 
@@ -46,6 +50,7 @@ class _GamesPageState extends State<GamesPage> {
         title: const Text('Games'),
       ),
       body: FutureBuilder<List<GameItem>>(
+        key: ValueKey(_gamesFuture),
         future: _gamesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -132,14 +137,45 @@ class _GamesPageState extends State<GamesPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddGame,
+        onPressed: _showAddOptions,
         child: const Icon(Icons.add),
       ),
     );
   }
 
+  void _showAddOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.search),
+              title: const Text('Search IGDB'),
+              onTap: () {
+                Navigator.pop(context);
+                _navigateToAddGame();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Enter Manually'),
+              onTap: () {
+                Navigator.pop(context);
+                _navigateToManualAdd();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _navigateToAddGame() {
-    // Check if IGDB credentials are available
     if (widget.igdbClientId.isEmpty || widget.igdbClientSecret.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -161,12 +197,25 @@ class _GamesPageState extends State<GamesPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddGamePage(
+        builder: (context) => ExternalAddGamePage(
           gameService: widget.gameService,
           externalSource: externalSource,
+          onGameAdded: _refresh,
         ),
       ),
-    ).then((_) => _refresh());
+    );
+  }
+
+  void _navigateToManualAdd() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ManualAddGamePage(
+          gameService: widget.gameService,
+          onGameAdded: _refresh,
+        ),
+      ),
+    );
   }
 }
 
@@ -236,7 +285,6 @@ class _GameListTile extends StatelessWidget {
             ),
           );
 
-          // If the game was changed (result == true), refresh the list
           if (result == true) {
             onGameChanged();
           }

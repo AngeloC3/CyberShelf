@@ -1,33 +1,30 @@
 // lib/application/game/game_service.dart
-import 'package:drift/drift.dart'; // Add this import for Value
+import 'package:drift/drift.dart';
 import 'package:cybershelf/data/database/app_database.dart';
-import 'package:cybershelf/data/database/database_provider.dart';
 import 'package:cybershelf/domain/game/external_game_source.dart';
 import 'package:cybershelf/domain/game/game_item.dart';
 import 'package:cybershelf/domain/game/game_metadata.dart';
 import 'package:cybershelf/domain/game/game_repository.dart';
 import 'package:cybershelf/domain/game/game_user_data.dart';
+import 'package:cybershelf/domain/game/game_mode.dart';
+import 'package:cybershelf/domain/game/game_platform.dart';
 import 'package:cybershelf/domain/media/contributor.dart' as domain;
 import 'package:cybershelf/domain/media/genre.dart' as domain;
-import 'package:cybershelf/domain/media/media_metadata.dart';
 import 'package:cybershelf/domain/media/media_user_data.dart';
+import 'package:cybershelf/domain/date_only.dart';
+import 'package:cybershelf/domain/media/media_metadata.dart';
 import 'package:cybershelf/domain/media/tag.dart' as domain;
 import 'package:cybershelf/domain/media/theme.dart' as domain;
 import 'package:cybershelf/domain/media_status.dart';
 
 class GameService {
   GameService(
-      this._repository, {
-        this._database,
-      });
+      this._repository,
+      this._database,
+      );
 
   final GameRepository _repository;
-  final AppDatabase? _database;
-
-  Future<AppDatabase> _getDatabase() async {
-    if (_database != null) return _database;
-    return await createDatabase();
-  }
+  final AppDatabase _database;
 
   Future<GameItem> create({
     required MediaMetadata metadata,
@@ -81,12 +78,10 @@ class GameService {
   }
 
   Future<GameItem> importFromExternalSource(ExternalGameResult result) async {
-    final database = await _getDatabase();
-
     // Resolve genres
     final genreIds = <int>[];
     for (final genre in result.genres) {
-      final existingGenre = await (database.select(database.genres)
+      final existingGenre = await (_database.select(_database.genres)
         ..where((g) => g.name.equals(genre.name)))
           .getSingleOrNull();
 
@@ -94,7 +89,7 @@ class GameService {
       if (existingGenre != null) {
         genreId = existingGenre.id;
       } else {
-        genreId = await database.into(database.genres).insert(
+        genreId = await _database.into(_database.genres).insert(
           GenresCompanion.insert(
             name: genre.name,
           ),
@@ -106,7 +101,7 @@ class GameService {
     // Resolve themes
     final themeIds = <int>[];
     for (final theme in result.themes) {
-      final existingTheme = await (database.select(database.themes)
+      final existingTheme = await (_database.select(_database.themes)
         ..where((t) => t.name.equals(theme.name)))
           .getSingleOrNull();
 
@@ -114,7 +109,7 @@ class GameService {
       if (existingTheme != null) {
         themeId = existingTheme.id;
       } else {
-        themeId = await database.into(database.themes).insert(
+        themeId = await _database.into(_database.themes).insert(
           ThemesCompanion.insert(
             name: theme.name,
           ),
@@ -152,8 +147,9 @@ class GameService {
       themes: domainThemes,
     );
 
-    // Resolve developers and publishers from the external result
+    // Create game metadata with available modes first, then resolve developers and publishers
     final gameMetadata = await _resolveDeveloperAndPublisherNames(
+      GameMetadata(availableModes: result.gameModes),
       result.developers,
       result.publishers,
     );
@@ -175,6 +171,100 @@ class GameService {
     );
   }
 
+  Future<GameItem> createManual({
+    required String title,
+    String? description,
+    String? coverUrl,
+    DateOnly? releaseDate,
+    List<String> genreNames = const [],
+    List<String> themeNames = const [],
+    List<String> developerNames = const [],
+    List<String> publisherNames = const [],
+    List<GameMode> availableModes = const [],
+    List<GameMode> playedModes = const [],
+    List<GamePlatform> playedPlatforms = const [],
+    MediaStatus status = MediaStatus.planned,
+  }) async {
+    // Validate title
+    if (title.trim().isEmpty) {
+      throw Exception('Title cannot be empty');
+    }
+
+    // Resolve genres
+    final genreIds = <int>[];
+    for (final name in genreNames) {
+      final existing = await (_database.select(_database.genres)
+        ..where((g) => g.name.equals(name))).getSingleOrNull();
+      final id = existing != null
+          ? existing.id
+          : await _database.into(_database.genres).insert(
+        GenresCompanion.insert(name: name),
+      );
+      genreIds.add(id);
+    }
+
+    // Resolve themes
+    final themeIds = <int>[];
+    for (final name in themeNames) {
+      final existing = await (_database.select(_database.themes)
+        ..where((t) => t.name.equals(name))).getSingleOrNull();
+      final id = existing != null
+          ? existing.id
+          : await _database.into(_database.themes).insert(
+        ThemesCompanion.insert(name: name),
+      );
+      themeIds.add(id);
+    }
+
+    // Build domain models
+    final genres = genreIds.asMap().entries.map((entry) {
+      final index = entry.key;
+      return domain.Genre(id: entry.value, name: genreNames[index]);
+    }).toList();
+
+    final themes = themeIds.asMap().entries.map((entry) {
+      final index = entry.key;
+      return domain.Theme(id: entry.value, name: themeNames[index]);
+    }).toList();
+
+    final metadata = MediaMetadata(
+      title: title,
+      description: description,
+      coverUrl: coverUrl,
+      releaseDate: releaseDate,
+      genres: genres,
+      themes: themes,
+    );
+
+    final userData = MediaUserData(status: status);
+
+    final gameMetadata = GameMetadata(availableModes: availableModes);
+
+    final gameUserData = GameUserData(
+      playedModes: playedModes,
+      playedPlatforms: playedPlatforms,
+    );
+
+    // Create the game
+    final game = await create(
+      metadata: metadata,
+      userData: userData,
+      gameMetadata: gameMetadata,
+      gameUserData: gameUserData,
+    );
+
+    // Add developers and publishers if any
+    if (developerNames.isNotEmpty || publisherNames.isNotEmpty) {
+      return await addDevelopersAndPublishers(
+        game.media.id,
+        developerNames,
+        publisherNames,
+      );
+    }
+
+    return game;
+  }
+
   // ============================================================
   // Private Helpers
   // ============================================================
@@ -182,12 +272,11 @@ class GameService {
   Future<List<domain.Tag>> _resolveTags(List<domain.Tag> tags) async {
     if (tags.isEmpty) return [];
 
-    final database = await _getDatabase();
     final resolvedTags = <domain.Tag>[];
 
     for (final tag in tags) {
       if (tag.id > 0) {
-        final existingTag = await (database.select(database.tags)
+        final existingTag = await (_database.select(_database.tags)
           ..where((t) => t.id.equals(tag.id)))
             .getSingleOrNull();
 
@@ -200,7 +289,7 @@ class GameService {
         }
       }
 
-      final existingTag = await (database.select(database.tags)
+      final existingTag = await (_database.select(_database.tags)
         ..where((t) => t.name.equals(tag.name)))
           .getSingleOrNull();
 
@@ -210,7 +299,7 @@ class GameService {
           name: existingTag.name,
         ));
       } else {
-        final newId = await database.into(database.tags).insert(
+        final newId = await _database.into(_database.tags).insert(
           TagsCompanion.insert(
             name: tag.name,
           ),
@@ -228,12 +317,10 @@ class GameService {
   Future<GameMetadata> _resolveDevelopersAndPublishers(
       GameMetadata gameMetadata,
       ) async {
-    final database = await _getDatabase();
-
     // Resolve developers
     final resolvedDevelopers = <domain.Contributor>[];
     for (final contributor in gameMetadata.developers) {
-      final resolved = await _resolveContributor(database, contributor);
+      final resolved = await _resolveContributor(contributor);
       if (resolved != null) {
         resolvedDevelopers.add(resolved);
       }
@@ -242,7 +329,7 @@ class GameService {
     // Resolve publishers
     final resolvedPublishers = <domain.Contributor>[];
     for (final contributor in gameMetadata.publishers) {
-      final resolved = await _resolveContributor(database, contributor);
+      final resolved = await _resolveContributor(contributor);
       if (resolved != null) {
         resolvedPublishers.add(resolved);
       }
@@ -255,12 +342,11 @@ class GameService {
   }
 
   Future<domain.Contributor?> _resolveContributor(
-      AppDatabase database,
       domain.Contributor contributor,
       ) async {
     // If it has a valid ID, try to find it
     if (contributor.id > 0) {
-      final existing = await (database.select(database.contributors)
+      final existing = await (_database.select(_database.contributors)
         ..where((c) => c.id.equals(contributor.id)))
           .getSingleOrNull();
 
@@ -275,13 +361,13 @@ class GameService {
 
     // If it has a personId, try to find or create
     if (contributor.personId != null && contributor.personId! > 0) {
-      final existingPerson = await (database.select(database.people)
+      final existingPerson = await (_database.select(_database.people)
         ..where((p) => p.id.equals(contributor.personId!)))
           .getSingleOrNull();
 
       if (existingPerson != null) {
         // Check if contributor already exists for this person
-        final existingContributor = await (database.select(database.contributors)
+        final existingContributor = await (_database.select(_database.contributors)
           ..where((c) => c.personId.equals(existingPerson.id)))
             .getSingleOrNull();
 
@@ -294,7 +380,7 @@ class GameService {
         }
 
         // Create new contributor
-        final newId = await database.into(database.contributors).insert(
+        final newId = await _database.into(_database.contributors).insert(
           ContributorsCompanion.insert(
             personId: Value(existingPerson.id),
           ),
@@ -309,12 +395,12 @@ class GameService {
 
     // If it has a companyId, try to find or create
     if (contributor.companyId != null && contributor.companyId! > 0) {
-      final existingCompany = await (database.select(database.companies)
+      final existingCompany = await (_database.select(_database.companies)
         ..where((c) => c.id.equals(contributor.companyId!)))
           .getSingleOrNull();
 
       if (existingCompany != null) {
-        final existingContributor = await (database.select(database.contributors)
+        final existingContributor = await (_database.select(_database.contributors)
           ..where((c) => c.companyId.equals(existingCompany.id)))
             .getSingleOrNull();
 
@@ -326,7 +412,7 @@ class GameService {
           );
         }
 
-        final newId = await database.into(database.contributors).insert(
+        final newId = await _database.into(_database.contributors).insert(
           ContributorsCompanion.insert(
             companyId: Value(existingCompany.id),
           ),
@@ -343,38 +429,29 @@ class GameService {
   }
 
   Future<GameMetadata> _resolveDeveloperAndPublisherNames(
+      GameMetadata gameMetadata,
       List<String> developerNames,
       List<String> publisherNames,
       ) async {
-    final database = await _getDatabase();
-
-    // Resolve developers from names
     final developers = <domain.Contributor>[];
     for (final name in developerNames) {
-      final contributor = await _resolveContributorByName(database, name, isPerson: true);
-      if (contributor != null) {
-        developers.add(contributor);
-      }
+      final contributor = await _resolveContributorByName(name, isPerson: true);
+      if (contributor != null) developers.add(contributor);
     }
 
-    // Resolve publishers from names
     final publishers = <domain.Contributor>[];
     for (final name in publisherNames) {
-      final contributor = await _resolveContributorByName(database, name, isPerson: false);
-      if (contributor != null) {
-        publishers.add(contributor);
-      }
+      final contributor = await _resolveContributorByName(name, isPerson: false);
+      if (contributor != null) publishers.add(contributor);
     }
 
-    return GameMetadata(
-      availableModes: const [],
+    return gameMetadata.copyWith(
       developers: developers,
       publishers: publishers,
     );
   }
 
   Future<domain.Contributor?> _resolveContributorByName(
-      AppDatabase database,
       String name, {
         required bool isPerson,
       }) async {
@@ -382,7 +459,7 @@ class GameService {
 
     if (isPerson) {
       // Try to find existing person
-      final existingPerson = await (database.select(database.people)
+      final existingPerson = await (_database.select(_database.people)
         ..where((p) => p.name.equals(name)))
           .getSingleOrNull();
 
@@ -390,13 +467,13 @@ class GameService {
       if (existingPerson != null) {
         personId = existingPerson.id;
       } else {
-        personId = await database.into(database.people).insert(
+        personId = await _database.into(_database.people).insert(
           PeopleCompanion.insert(name: name),
         );
       }
 
       // Check if contributor already exists for this person
-      final existingContributor = await (database.select(database.contributors)
+      final existingContributor = await (_database.select(_database.contributors)
         ..where((c) => c.personId.equals(personId)))
           .getSingleOrNull();
 
@@ -409,7 +486,7 @@ class GameService {
       }
 
       // Create new contributor
-      final contributorId = await database.into(database.contributors).insert(
+      final contributorId = await _database.into(_database.contributors).insert(
         ContributorsCompanion.insert(
           personId: Value(personId),
         ),
@@ -422,7 +499,7 @@ class GameService {
       );
     } else {
       // Try to find existing company
-      final existingCompany = await (database.select(database.companies)
+      final existingCompany = await (_database.select(_database.companies)
         ..where((c) => c.name.equals(name)))
           .getSingleOrNull();
 
@@ -430,13 +507,13 @@ class GameService {
       if (existingCompany != null) {
         companyId = existingCompany.id;
       } else {
-        companyId = await database.into(database.companies).insert(
+        companyId = await _database.into(_database.companies).insert(
           CompaniesCompanion.insert(name: name),
         );
       }
 
       // Check if contributor already exists for this company
-      final existingContributor = await (database.select(database.contributors)
+      final existingContributor = await (_database.select(_database.contributors)
         ..where((c) => c.companyId.equals(companyId)))
           .getSingleOrNull();
 
@@ -449,7 +526,7 @@ class GameService {
       }
 
       // Create new contributor
-      final contributorId = await database.into(database.contributors).insert(
+      final contributorId = await _database.into(_database.contributors).insert(
         ContributorsCompanion.insert(
           companyId: Value(companyId),
         ),
@@ -462,4 +539,43 @@ class GameService {
       );
     }
   }
+
+  Future<String> getContributorName(domain.Contributor contributor) async {
+    if (contributor.isPerson) {
+      final person = await (_database.select(_database.people)
+        ..where((p) => p.id.equals(contributor.personId!)))
+          .getSingleOrNull();
+      return person?.name ?? 'Unknown Person';
+    } else {
+      final company = await (_database.select(_database.companies)
+        ..where((c) => c.id.equals(contributor.companyId!)))
+          .getSingleOrNull();
+      return company?.name ?? 'Unknown Company';
+    }
+  }
+
+  Future<GameItem> addDevelopersAndPublishers(
+      int gameId,
+      List<String> developerNames,
+      List<String> publisherNames,
+      ) async {
+    final game = await getById(gameId);
+    if (game == null) {
+      throw StateError('Game with ID $gameId not found');
+    }
+
+    // Resolve developers and publishers from names
+    final resolvedMetadata = await _resolveDeveloperAndPublisherNames(
+      game.gameMetadata,
+      developerNames,
+      publisherNames,
+    );
+
+    final updatedGame = game.copyWith(
+      gameMetadata: resolvedMetadata,
+    );
+
+    return update(updatedGame);
+  }
+
 }

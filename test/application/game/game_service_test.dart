@@ -14,7 +14,6 @@ import 'package:cybershelf/domain/media/media_user_data.dart';
 import 'package:cybershelf/domain/media/tag.dart' as domain;
 import 'package:cybershelf/domain/media/theme.dart' as domain;
 import 'package:cybershelf/domain/media_status.dart';
-import 'package:drift/native.dart';
 import 'package:drift/drift.dart';
 
 import '../../helpers/fake_game_repository.dart';
@@ -23,10 +22,54 @@ void main() {
   // Initialize the binding for tests that need it
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // Single shared database instance for all tests
+  late AppDatabase database;
+
+  // Helper function to clear all tables
+  Future<void> clearDatabase() async {
+    // Delete in reverse order of dependencies to avoid foreign key violations
+    await database.delete(database.mediaTags).go();
+    await database.delete(database.mediaGenres).go();
+    await database.delete(database.mediaThemes).go();
+    await database.delete(database.externalIds).go();
+    await database.delete(database.gameAvailableModes).go();
+    await database.delete(database.gamePlayedModes).go();
+    await database.delete(database.gamePlayedPlatforms).go();
+    await database.delete(database.gameDevelopers).go();
+    await database.delete(database.gamePublishers).go();
+    await database.delete(database.contributors).go();
+    await database.delete(database.people).go();
+    await database.delete(database.companies).go();
+    await database.delete(database.games).go();
+    await database.delete(database.mediaUserData).go();
+    await database.delete(database.mediaMetadata).go();
+    await database.delete(database.genres).go();
+    await database.delete(database.themes).go();
+    await database.delete(database.tags).go();
+    await database.delete(database.media).go();
+  }
+
+  // Setup once before all tests
+  setUpAll(() {
+    database = AppDatabase.forTesting();
+  });
+
+  // Cleanup after all tests
+  tearDownAll(() async {
+    await database.close();
+  });
+
   group('GameService', () {
+    // Reset database state before each test by clearing all tables
+    setUp(() async {
+      // Clear all tables in the correct order to avoid foreign key violations
+      await clearDatabase();
+
+    });
+
     test('create creates a game through the repository', () async {
       final repository = FakeGameRepository();
-      final service = GameService(repository);
+      final service = GameService(repository, database);
 
       const metadata = MediaMetadata(title: 'Test Game');
       const userData = MediaUserData(status: MediaStatus.planned);
@@ -71,7 +114,7 @@ void main() {
         gameUserData: const GameUserData(),
       );
 
-      final service = GameService(repository);
+      final service = GameService(repository, database);
 
       final updated = original.copyWith(
         media: original.media.copyWith(
@@ -119,7 +162,7 @@ void main() {
         gameUserData: const GameUserData(),
       );
 
-      final service = GameService(repository);
+      final service = GameService(repository, database);
 
       final result = await service.getById(created.media.id);
 
@@ -147,7 +190,7 @@ void main() {
         gameUserData: const GameUserData(),
       );
 
-      final service = GameService(repository);
+      final service = GameService(repository, database);
 
       final result = await service.getAll();
 
@@ -167,7 +210,7 @@ void main() {
         gameUserData: const GameUserData(),
       );
 
-      final service = GameService(repository);
+      final service = GameService(repository, database);
 
       await service.delete(created.media.id);
 
@@ -177,26 +220,9 @@ void main() {
     });
 
     group('importFromExternalSource', () {
-      late AppDatabase database;
-
-      setUp(() {
-        // Use an in-memory database for testing
-        database = AppDatabase(
-          NativeDatabase.memory(
-            setup: (db) {
-              db.execute('PRAGMA foreign_keys = ON');
-            },
-          ),
-        );
-      });
-
-      tearDown(() async {
-        await database.close();
-      });
-
       test('imports a game from external source', () async {
         final repository = FakeGameRepository();
-        final service = GameService(repository, database: database);
+        final service = GameService(repository, database);
 
         final releaseDate = DateOnly(year: 2024, month: 11, day: 15);
         final genres = [
@@ -240,7 +266,7 @@ void main() {
 
       test('handles empty optional fields', () async {
         final repository = FakeGameRepository();
-        final service = GameService(repository, database: database);
+        final service = GameService(repository, database);
 
         final externalResult = ExternalGameResult(
           title: 'Minimal Game',
@@ -263,7 +289,7 @@ void main() {
 
       test('reuses existing genres and themes', () async {
         final repository = FakeGameRepository();
-        final service = GameService(repository, database: database);
+        final service = GameService(repository, database);
 
         // Pre-populate a genre and theme
         final existingGenreId = await database.into(database.genres).insert(
@@ -306,24 +332,12 @@ void main() {
     });
 
     group('update with tag resolution', () {
-      late AppDatabase database;
       late FakeGameRepository repository;
       late GameService service;
 
       setUp(() {
-        database = AppDatabase(
-          NativeDatabase.memory(
-            setup: (db) {
-              db.execute('PRAGMA foreign_keys = ON');
-            },
-          ),
-        );
         repository = FakeGameRepository();
-        service = GameService(repository, database: database);
-      });
-
-      tearDown(() async {
-        await database.close();
+        service = GameService(repository, database);
       });
 
       test('creates new tags when updating with temporary IDs', () async {
@@ -470,24 +484,12 @@ void main() {
     });
 
     group('update with developer and publisher resolution', () {
-      late AppDatabase database;
       late FakeGameRepository repository;
       late GameService service;
 
       setUp(() {
-        database = AppDatabase(
-          NativeDatabase.memory(
-            setup: (db) {
-              db.execute('PRAGMA foreign_keys = ON');
-            },
-          ),
-        );
         repository = FakeGameRepository();
-        service = GameService(repository, database: database);
-      });
-
-      tearDown(() async {
-        await database.close();
+        service = GameService(repository, database);
       });
 
       test('creates new person developer when updating with contributor containing personId', () async {
@@ -716,6 +718,388 @@ void main() {
         expect(contributors, hasLength(1));
         expect(contributors[0].companyId, companyId);
         expect(contributors[0].personId, null);
+      });
+    });
+
+    group('getContributorName', () {
+      late FakeGameRepository repository;
+      late GameService service;
+
+      setUp(() {
+        repository = FakeGameRepository();
+        service = GameService(repository, database);
+      });
+
+      test('returns person name for a person contributor', () async {
+        // Create a person
+        final personId = await database.into(database.people).insert(
+          PeopleCompanion.insert(name: 'Hideo Kojima'),
+        );
+
+        // Create a contributor
+        final contributorId = await database.into(database.contributors).insert(
+          ContributorsCompanion.insert(
+            personId: Value(personId),
+          ),
+        );
+
+        final contributor = domain.Contributor(
+          id: contributorId,
+          personId: personId,
+          companyId: null,
+        );
+
+        final name = await service.getContributorName(contributor);
+        expect(name, 'Hideo Kojima');
+      });
+
+      test('returns company name for a company contributor', () async {
+        // Create a company
+        final companyId = await database.into(database.companies).insert(
+          CompaniesCompanion.insert(name: 'Nintendo'),
+        );
+
+        // Create a contributor
+        final contributorId = await database.into(database.contributors).insert(
+          ContributorsCompanion.insert(
+            companyId: Value(companyId),
+          ),
+        );
+
+        final contributor = domain.Contributor(
+          id: contributorId,
+          personId: null,
+          companyId: companyId,
+        );
+
+        final name = await service.getContributorName(contributor);
+        expect(name, 'Nintendo');
+      });
+
+      test('returns Unknown Person when person not found', () async {
+        final contributor = domain.Contributor(
+          id: 999,
+          personId: 999,
+          companyId: null,
+        );
+
+        final name = await service.getContributorName(contributor);
+        expect(name, 'Unknown Person');
+      });
+
+      test('returns Unknown Company when company not found', () async {
+        final contributor = domain.Contributor(
+          id: 999,
+          personId: null,
+          companyId: 999,
+        );
+
+        final name = await service.getContributorName(contributor);
+        expect(name, 'Unknown Company');
+      });
+    });
+
+    group('addDevelopersAndPublishers', () {
+      late FakeGameRepository repository;
+      late GameService service;
+
+      setUp(() {
+        repository = FakeGameRepository();
+        service = GameService(repository, database);
+      });
+
+      test('adds developers and publishers to an existing game', () async {
+        // Create a game first
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        final developerNames = ['Hideo Kojima', 'Shigeru Miyamoto'];
+        final publisherNames = ['Nintendo', 'Konami'];
+
+        final result = await service.addDevelopersAndPublishers(
+          game.media.id,
+          developerNames,
+          publisherNames,
+        );
+
+        // Should have 2 developers
+        expect(result.gameMetadata.developers, hasLength(2));
+        expect(result.gameMetadata.publishers, hasLength(2));
+
+        // Verify the developers were created as people
+        final firstDeveloper = result.gameMetadata.developers[0];
+        expect(firstDeveloper.isPerson, isTrue);
+        final person = await database.select(database.people).get();
+        expect(person.map((p) => p.name), containsAll(developerNames));
+
+        // Verify the publishers were created as companies
+        final firstPublisher = result.gameMetadata.publishers[0];
+        expect(firstPublisher.isCompany, isTrue);
+        final companies = await database.select(database.companies).get();
+        expect(companies.map((c) => c.name), containsAll(publisherNames));
+
+        // Verify contributors were created
+        final contributors = await database.select(database.contributors).get();
+        expect(contributors, hasLength(4));
+      });
+
+      test('handles empty developer and publisher lists', () async {
+        // Create a game first
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        final result = await service.addDevelopersAndPublishers(
+          game.media.id,
+          [],
+          [],
+        );
+
+        expect(result.gameMetadata.developers, isEmpty);
+        expect(result.gameMetadata.publishers, isEmpty);
+
+        final contributors = await database.select(database.contributors).get();
+        expect(contributors, isEmpty);
+      });
+
+      test('throws when game does not exist', () async {
+        expect(
+              () => service.addDevelopersAndPublishers(
+            999,
+            ['Developer'],
+            ['Publisher'],
+          ),
+          throwsA(isA<StateError>().having(
+                (e) => e.message,
+            'message',
+            contains('not found'),
+          )),
+        );
+      });
+
+      test('reuses existing people and companies by name', () async {
+        // Pre-create a person and company
+        await database.into(database.people).insert(
+          PeopleCompanion.insert(name: 'Hideo Kojima'),
+        );
+        await database.into(database.companies).insert(
+          CompaniesCompanion.insert(name: 'Nintendo'),
+        );
+
+        // Create a game
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        final result = await service.addDevelopersAndPublishers(
+          game.media.id,
+          ['Hideo Kojima', 'New Person'],
+          ['Nintendo', 'New Company'],
+        );
+
+        // Should reuse existing person and company
+        expect(result.gameMetadata.developers, hasLength(2));
+        expect(result.gameMetadata.publishers, hasLength(2));
+
+        // Verify no duplicate people/companies were created
+        final people = await database.select(database.people).get();
+        final companies = await database.select(database.companies).get();
+        expect(people, hasLength(2));
+        expect(companies, hasLength(2));
+        expect(people.map((p) => p.name), containsAll(['Hideo Kojima', 'New Person']));
+        expect(companies.map((c) => c.name), containsAll(['Nintendo', 'New Company']));
+      });
+    });
+
+    group('createManual', () {
+      late FakeGameRepository repository;
+      late GameService service;
+
+      setUp(() {
+        repository = FakeGameRepository();
+        service = GameService(repository, database);
+      });
+
+      test('creates a game with all fields', () async {
+        final result = await service.createManual(
+          title: 'Manual Game',
+          description: 'A manually added game',
+          coverUrl: 'https://example.com/cover.jpg',
+          releaseDate: DateOnly(year: 2024, month: 11, day: 15),
+          genreNames: ['Action', 'RPG'],
+          themeNames: ['Fantasy'],
+          developerNames: ['Developer 1'],
+          publisherNames: ['Publisher 1'],
+          availableModes: [GameMode.singlePlayer, GameMode.multiplayer],
+          playedModes: [GameMode.singlePlayer, GameMode.cooperative],
+          playedPlatforms: [GamePlatform.pc, GamePlatform.nintendoSwitch],
+          status: MediaStatus.completed,
+        );
+
+        expect(result.media.metadata.title, 'Manual Game');
+        expect(result.media.metadata.description, 'A manually added game');
+        expect(result.media.metadata.coverUrl, 'https://example.com/cover.jpg');
+        expect(result.media.metadata.releaseDate, DateOnly(year: 2024, month: 11, day: 15));
+        expect(result.media.metadata.genres, hasLength(2));
+        expect(result.media.metadata.genres.map((g) => g.name), containsAll(['Action', 'RPG']));
+        expect(result.media.metadata.themes, hasLength(1));
+        expect(result.media.metadata.themes[0].name, 'Fantasy');
+        expect(result.media.userData.status, MediaStatus.completed);
+        expect(result.gameMetadata.availableModes, [GameMode.singlePlayer, GameMode.multiplayer]);
+        expect(result.gameMetadata.developers, hasLength(1));
+        expect(result.gameMetadata.publishers, hasLength(1));
+        expect(result.gameUserData.playedModes, [GameMode.singlePlayer, GameMode.cooperative]);
+        expect(result.gameUserData.playedPlatforms, [GamePlatform.pc, GamePlatform.nintendoSwitch]);
+      });
+
+      test('creates a game with minimal fields', () async {
+        final result = await service.createManual(
+          title: 'Minimal Game',
+        );
+
+        expect(result.media.metadata.title, 'Minimal Game');
+        expect(result.media.metadata.description, null);
+        expect(result.media.metadata.coverUrl, null);
+        expect(result.media.metadata.releaseDate, null);
+        expect(result.media.metadata.genres, isEmpty);
+        expect(result.media.metadata.themes, isEmpty);
+        expect(result.media.userData.status, MediaStatus.planned);
+        expect(result.gameMetadata.availableModes, isEmpty);
+        expect(result.gameMetadata.developers, isEmpty);
+        expect(result.gameMetadata.publishers, isEmpty);
+        expect(result.gameUserData.playedModes, isEmpty);
+        expect(result.gameUserData.playedPlatforms, isEmpty);
+      });
+
+      test('reuses existing genres and themes by name', () async {
+        // Pre-create a genre and theme
+        await database.into(database.genres).insert(
+          GenresCompanion.insert(name: 'Action'),
+        );
+        await database.into(database.themes).insert(
+          ThemesCompanion.insert(name: 'Fantasy'),
+        );
+
+        final result = await service.createManual(
+          title: 'Test Game',
+          genreNames: ['Action', 'RPG'],
+          themeNames: ['Fantasy', 'Sci-Fi'],
+        );
+
+        // Action and Fantasy should be reused
+        final genres = result.media.metadata.genres;
+        final themes = result.media.metadata.themes;
+
+        // Find the IDs
+        final actionGenre = genres.firstWhere((g) => g.name == 'Action');
+        final rpgGenre = genres.firstWhere((g) => g.name == 'RPG');
+        final fantasyTheme = themes.firstWhere((t) => t.name == 'Fantasy');
+        final sciFiTheme = themes.firstWhere((t) => t.name == 'Sci-Fi');
+
+        // Action and Fantasy should have IDs from pre-created records
+        expect(actionGenre.id, isNot(0));
+        expect(rpgGenre.id, isNot(0));
+        expect(fantasyTheme.id, isNot(0));
+        expect(sciFiTheme.id, isNot(0));
+
+        // Verify total records
+        final allGenres = await database.select(database.genres).get();
+        final allThemes = await database.select(database.themes).get();
+        expect(allGenres, hasLength(2));
+        expect(allThemes, hasLength(2));
+      });
+
+      test('reuses existing developers and publishers by name', () async {
+        // Pre-create a person and company
+        await database.into(database.people).insert(
+          PeopleCompanion.insert(name: 'Existing Developer'),
+        );
+        await database.into(database.companies).insert(
+          CompaniesCompanion.insert(name: 'Existing Publisher'),
+        );
+
+        final result = await service.createManual(
+          title: 'Test Game',
+          developerNames: ['Existing Developer', 'New Developer'],
+          publisherNames: ['Existing Publisher', 'New Publisher'],
+        );
+
+        // Should have 2 developers and 2 publishers
+        expect(result.gameMetadata.developers, hasLength(2));
+        expect(result.gameMetadata.publishers, hasLength(2));
+
+        // Verify no duplicate people/companies were created
+        final people = await database.select(database.people).get();
+        final companies = await database.select(database.companies).get();
+        expect(people, hasLength(2));
+        expect(companies, hasLength(2));
+        expect(people.map((p) => p.name), containsAll(['Existing Developer', 'New Developer']));
+        expect(companies.map((c) => c.name), containsAll(['Existing Publisher', 'New Publisher']));
+      });
+
+      test('creates developers as people and publishers as companies', () async {
+        final result = await service.createManual(
+          title: 'Test Game',
+          developerNames: ['Hideo Kojima'],
+          publisherNames: ['Nintendo'],
+        );
+
+        final developer = result.gameMetadata.developers.first;
+        final publisher = result.gameMetadata.publishers.first;
+
+        expect(developer.isPerson, isTrue);
+        expect(publisher.isCompany, isTrue);
+
+        // Verify the person and company were created
+        final people = await database.select(database.people).get();
+        final companies = await database.select(database.companies).get();
+        expect(people, hasLength(1));
+        expect(companies, hasLength(1));
+        expect(people[0].name, 'Hideo Kojima');
+        expect(companies[0].name, 'Nintendo');
+
+        // Verify contributors were created
+        final contributors = await database.select(database.contributors).get();
+        expect(contributors, hasLength(2));
+        expect(contributors[0].personId, isNot(null));
+        expect(contributors[1].companyId, isNot(null));
+      });
+
+      test('throws when title is empty', () async {
+        expect(
+              () => service.createManual(title: ''),
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      test('creates game with played modes and played platforms', () async {
+        final result = await service.createManual(
+          title: 'Played Game',
+          playedModes: [GameMode.singlePlayer, GameMode.cooperative],
+          playedPlatforms: [GamePlatform.pc, GamePlatform.steamDeck],
+        );
+
+        expect(result.gameUserData.playedModes, [GameMode.singlePlayer, GameMode.cooperative]);
+        expect(result.gameUserData.playedPlatforms, [GamePlatform.pc, GamePlatform.steamDeck]);
+      });
+
+      test('creates game with empty played modes and played platforms by default', () async {
+        final result = await service.createManual(
+          title: 'No Play Data Game',
+        );
+
+        expect(result.gameUserData.playedModes, isEmpty);
+        expect(result.gameUserData.playedPlatforms, isEmpty);
       });
     });
   });

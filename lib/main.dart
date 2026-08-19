@@ -16,7 +16,7 @@ Future<void> main() async {
   final database = await createDatabase();
 
   final gameRepository = DriftGameRepository(database);
-  final gameService = GameService(gameRepository);
+  final gameService = GameService(gameRepository, database);
 
   final igdbClientId = dotenv.env['IGDB_CLIENT_ID'] ?? '';
   final igdbClientSecret = dotenv.env['IGDB_CLIENT_SECRET'] ?? '';

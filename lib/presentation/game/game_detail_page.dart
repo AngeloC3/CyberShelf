@@ -6,6 +6,7 @@ import 'package:cybershelf/domain/game/game_mode.dart';
 import 'package:cybershelf/domain/game/game_platform.dart';
 import 'package:cybershelf/domain/media/tag.dart';
 import 'package:cybershelf/domain/media_status.dart';
+import 'package:cybershelf/domain/media/contributor.dart' as domain;
 
 class GameDetailPage extends StatefulWidget {
   const GameDetailPage({
@@ -314,19 +315,9 @@ class _GameDetailPageState extends State<GameDetailPage> {
                     .join(', '),
               ),
             if (game.gameMetadata.developers.isNotEmpty)
-              _buildInfoRow(
-                'Developers',
-                game.gameMetadata.developers.map((d) =>
-                d.isPerson ? 'Person ID: ${d.personId}' : 'Company ID: ${d.companyId}'
-                ).join(', '),
-              ),
+              _buildContributorsRow('Developers', game.gameMetadata.developers),
             if (game.gameMetadata.publishers.isNotEmpty)
-              _buildInfoRow(
-                'Publishers',
-                game.gameMetadata.publishers.map((p) =>
-                p.isPerson ? 'Person ID: ${p.personId}' : 'Company ID: ${p.companyId}'
-                ).join(', '),
-              ),
+              _buildContributorsRow('Publishers', game.gameMetadata.publishers),
             if (game.gameMetadata.availableModes.isEmpty &&
                 game.gameMetadata.developers.isEmpty &&
                 game.gameMetadata.publishers.isEmpty)
@@ -339,6 +330,47 @@ class _GameDetailPageState extends State<GameDetailPage> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildContributorsRow(String label, List<domain.Contributor> contributors) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<String>>(
+              future: Future.wait(
+                contributors.map((c) => widget.gameService.getContributorName(c)),
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Text('Loading...', style: TextStyle(color: Colors.grey));
+                }
+                if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}', style: TextStyle(color: Colors.red));
+                }
+                final names = snapshot.data ?? [];
+                return Text(
+                  names.join(', '),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

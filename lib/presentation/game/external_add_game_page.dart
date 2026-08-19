@@ -1,25 +1,27 @@
-// lib/presentation/game/add_game_page.dart
+// lib/presentation/game/external_add_game_page.dart
 import 'package:flutter/material.dart';
 import 'package:cybershelf/application/game/game_service.dart';
 import 'package:cybershelf/domain/game/external_game_source.dart';
 import 'package:cybershelf/domain/game/game_mode.dart';
 import 'package:cybershelf/presentation/game/game_detail_page.dart';
 
-class AddGamePage extends StatefulWidget {
-  const AddGamePage({
+class ExternalAddGamePage extends StatefulWidget {
+  const ExternalAddGamePage({
     super.key,
     required this.gameService,
     required this.externalSource,
+    this.onGameAdded,
   });
 
   final GameService gameService;
   final ExternalGameSource externalSource;
+  final VoidCallback? onGameAdded;
 
   @override
-  State<AddGamePage> createState() => _AddGamePageState();
+  State<ExternalAddGamePage> createState() => _ExternalAddGamePageState();
 }
 
-class _AddGamePageState extends State<AddGamePage> {
+class _ExternalAddGamePageState extends State<ExternalAddGamePage> {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
   List<ExternalGameResult> _results = [];
@@ -86,7 +88,6 @@ class _AddGamePageState extends State<AddGamePage> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      // Remove the hardcoded fillColor and let the theme handle it
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
                         icon: const Icon(Icons.clear),
@@ -248,6 +249,7 @@ class _AddGamePageState extends State<AddGamePage> {
       builder: (context) => _GamePreviewSheet(
         result: result,
         gameService: widget.gameService,
+        onGameAdded: widget.onGameAdded,
       ),
     );
   }
@@ -353,10 +355,12 @@ class _GamePreviewSheet extends StatefulWidget {
   const _GamePreviewSheet({
     required this.result,
     required this.gameService,
+    this.onGameAdded,
   });
 
   final ExternalGameResult result;
   final GameService gameService;
+  final VoidCallback? onGameAdded;
 
   @override
   State<_GamePreviewSheet> createState() => _GamePreviewSheetState();
@@ -365,8 +369,6 @@ class _GamePreviewSheet extends StatefulWidget {
 class _GamePreviewSheetState extends State<_GamePreviewSheet> {
   bool _isAdding = false;
   String? _error;
-
-  // lib/presentation/game/add_game_page.dart - Update the _addGame method
 
   Future<void> _addGame() async {
     setState(() {
@@ -380,17 +382,17 @@ class _GamePreviewSheetState extends State<_GamePreviewSheet> {
       );
 
       if (mounted) {
+        widget.onGameAdded?.call();
         Navigator.pop(context); // Close bottom sheet
         Navigator.pop(context); // Go back to games list
 
-        // Navigate to the new game detail page
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => GameDetailPage(
               gameId: game.media.id,
               gameService: widget.gameService,
-              onGameChanged: () {}, // Empty callback since we're coming from add
+              onGameChanged: widget.onGameAdded ?? () {},
             ),
           ),
         );
