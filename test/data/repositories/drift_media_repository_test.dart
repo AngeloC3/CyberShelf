@@ -6,6 +6,7 @@ import 'package:cybershelf/domain/media/media_metadata.dart';
 import 'package:cybershelf/domain/media/media_user_data.dart';
 import 'package:cybershelf/domain/media/external_id.dart' as domain;
 import 'package:cybershelf/domain/media/genre.dart' as domain;
+import 'package:cybershelf/domain/media/series.dart' as domain;
 import 'package:cybershelf/domain/media/tag.dart' as domain;
 import 'package:cybershelf/domain/media/theme.dart' as domain;
 import 'package:cybershelf/domain/media_status.dart';
@@ -185,6 +186,53 @@ void main() {
     expect(storedThemes, hasLength(2));
   });
 
+  test('create stores and returns series', () async {
+    await database.into(database.series).insert(
+      SeriesCompanion.insert(
+        name: 'Test Series',
+      ),
+    );
+
+    await database.into(database.series).insert(
+      SeriesCompanion.insert(
+        name: 'Another Series',
+      ),
+    );
+
+    final media = await repository.create(
+      type: MediaType.game,
+      metadata: const MediaMetadata(
+        title: 'Test Game',
+        series: [
+          domain.Series(
+            id: 1,
+            name: 'Test Series',
+          ),
+          domain.Series(
+            id: 2,
+            name: 'Another Series',
+          ),
+        ],
+      ),
+      userData: const MediaUserData(
+        status: MediaStatus.planned,
+      ),
+    );
+
+    expect(media.metadata.series, hasLength(2));
+    expect(media.metadata.series[0].name, 'Test Series');
+    expect(media.metadata.series[1].name, 'Another Series');
+
+    final storedSeries =
+    await database.select(database.mediaSeries).get();
+
+    expect(storedSeries, hasLength(2));
+    expect(storedSeries[0].mediaId, media.id);
+    expect(storedSeries[0].seriesId, 1);
+    expect(storedSeries[1].mediaId, media.id);
+    expect(storedSeries[1].seriesId, 2);
+  });
+
   test('create stores and returns external IDs and tags', () async {
     await database.into(database.tags).insert(
       TagsCompanion.insert(
@@ -356,6 +404,38 @@ void main() {
     expect(result.metadata.themes.first.name, 'Fantasy');
   });
 
+  test('getById returns series', () async {
+    await database.into(database.series).insert(
+      SeriesCompanion.insert(
+        name: 'Test Series',
+      ),
+    );
+
+    final media = await repository.create(
+      type: MediaType.game,
+      metadata: const MediaMetadata(
+        title: 'Test Game',
+        series: [
+          domain.Series(
+            id: 1,
+            name: 'Test Series',
+          ),
+        ],
+      ),
+      userData: const MediaUserData(
+        status: MediaStatus.planned,
+      ),
+    );
+
+    final result = await repository.getById(media.id);
+
+    expect(result, isNotNull);
+
+    expect(result!.metadata.series, hasLength(1));
+    expect(result.metadata.series.first.id, 1);
+    expect(result.metadata.series.first.name, 'Test Series');
+  });
+
   test('getById returns external IDs and tags', () async {
     await database.into(database.tags).insert(
       TagsCompanion.insert(
@@ -503,6 +583,36 @@ void main() {
     expect(result.first.metadata.themes.first.name, 'Fantasy');
   });
 
+  test('getAll returns series', () async {
+    await database.into(database.series).insert(
+      SeriesCompanion.insert(
+        name: 'Test Series',
+      ),
+    );
+
+    await repository.create(
+      type: MediaType.game,
+      metadata: const MediaMetadata(
+        title: 'Test Game',
+        series: [
+          domain.Series(
+            id: 1,
+            name: 'Test Series',
+          ),
+        ],
+      ),
+      userData: const MediaUserData(
+        status: MediaStatus.planned,
+      ),
+    );
+
+    final result = await repository.getAll();
+
+    expect(result, hasLength(1));
+    expect(result.first.metadata.series, hasLength(1));
+    expect(result.first.metadata.series.first.name, 'Test Series');
+  });
+
   test('getAll returns external IDs and tags', () async {
     await database.into(database.tags).insert(
       TagsCompanion.insert(
@@ -595,7 +705,7 @@ void main() {
     );
   });
 
-  test('update replaces genres, themes, external IDs, and tags', () async {
+  test('update replaces genres, themes, series, external IDs, and tags', () async {
     await database.into(database.genres).insert(
       GenresCompanion.insert(
         name: 'RPG',
@@ -617,6 +727,18 @@ void main() {
     await database.into(database.themes).insert(
       ThemesCompanion.insert(
         name: 'Sci-Fi',
+      ),
+    );
+
+    await database.into(database.series).insert(
+      SeriesCompanion.insert(
+        name: 'Original Series',
+      ),
+    );
+
+    await database.into(database.series).insert(
+      SeriesCompanion.insert(
+        name: 'New Series',
       ),
     );
 
@@ -646,6 +768,12 @@ void main() {
           domain.Theme(
             id: 1,
             name: 'Fantasy',
+          ),
+        ],
+        series: [
+          domain.Series(
+            id: 1,
+            name: 'Original Series',
           ),
         ],
         externalIds: [
@@ -680,6 +808,12 @@ void main() {
             name: 'Sci-Fi',
           ),
         ],
+        series: const [
+          domain.Series(
+            id: 2,
+            name: 'New Series',
+          ),
+        ],
         externalIds: const [
           domain.ExternalId(
             source: 'steam',
@@ -711,6 +845,10 @@ void main() {
     expect(result.metadata.themes.first.id, 2);
     expect(result.metadata.themes.first.name, 'Sci-Fi');
 
+    expect(result.metadata.series, hasLength(1));
+    expect(result.metadata.series.first.id, 2);
+    expect(result.metadata.series.first.name, 'New Series');
+
     expect(result.metadata.externalIds, hasLength(1));
     expect(result.metadata.externalIds.first.source, 'steam');
     expect(result.metadata.externalIds.first.value, 'new-id');
@@ -726,6 +864,11 @@ void main() {
 
     expect(
       await database.select(database.mediaThemes).get(),
+      hasLength(1),
+    );
+
+    expect(
+      await database.select(database.mediaSeries).get(),
       hasLength(1),
     );
 
@@ -753,6 +896,12 @@ void main() {
       ),
     );
 
+    await database.into(database.series).insert(
+      SeriesCompanion.insert(
+        name: 'Test Series',
+      ),
+    );
+
     await database.into(database.tags).insert(
       TagsCompanion.insert(
         name: 'Backlog',
@@ -773,6 +922,12 @@ void main() {
           domain.Theme(
             id: 1,
             name: 'Fantasy',
+          ),
+        ],
+        series: [
+          domain.Series(
+            id: 1,
+            name: 'Test Series',
           ),
         ],
         externalIds: [
@@ -800,11 +955,13 @@ void main() {
     expect(await database.select(database.mediaUserData).get(), isEmpty);
     expect(await database.select(database.mediaGenres).get(), isEmpty);
     expect(await database.select(database.mediaThemes).get(), isEmpty);
+    expect(await database.select(database.mediaSeries).get(), isEmpty);
     expect(await database.select(database.externalIds).get(), isEmpty);
     expect(await database.select(database.mediaTags).get(), isEmpty);
 
     expect(await database.select(database.genres).get(), hasLength(1));
     expect(await database.select(database.themes).get(), hasLength(1));
+    expect(await database.select(database.series).get(), hasLength(1));
     expect(await database.select(database.tags).get(), hasLength(1));
   });
 

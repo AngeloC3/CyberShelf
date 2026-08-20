@@ -19,9 +19,7 @@ void main() {
         userData: MediaUserData(status: MediaStatus.planned),
       );
 
-      const gameMetadata = GameMetadata(
-        availableModes: [GameMode.singlePlayer, GameMode.cooperative],
-      );
+      const gameMetadata = GameMetadata();
 
       const gameUserData = GameUserData(
         playedModes: [GameMode.cooperative],
@@ -46,9 +44,7 @@ void main() {
           metadata: MediaMetadata(title: 'Test Game'),
           userData: MediaUserData(status: MediaStatus.planned),
         ),
-        gameMetadata: GameMetadata(
-          availableModes: [GameMode.singlePlayer],
-        ),
+        gameMetadata: GameMetadata(),
         gameUserData: GameUserData(
           playedModes: [GameMode.singlePlayer],
         ),

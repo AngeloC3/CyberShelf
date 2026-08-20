@@ -107,9 +107,6 @@ class DriftGameRepository implements GameRepository {
     return _database.transaction(() async {
       final updatedMedia = await _mediaRepository.update(game.media);
 
-      await (_database.delete(_database.gameAvailableModes)
-        ..where((m) => m.mediaId.equals(game.media.id)))
-          .go();
       await (_database.delete(_database.gameDevelopers)
         ..where((d) => d.mediaId.equals(game.media.id)))
           .go();
@@ -146,12 +143,6 @@ class DriftGameRepository implements GameRepository {
       int mediaId,
       GameMetadata gameMetadata,
       ) async {
-    for (final mode in gameMetadata.availableModes) {
-      await _database.into(_database.gameAvailableModes).insert(
-        GameAvailableModesCompanion.insert(mediaId: mediaId, mode: mode),
-      );
-    }
-
     for (final developer in gameMetadata.developers) {
       await _database.into(_database.gameDevelopers).insert(
         GameDevelopersCompanion.insert(
@@ -192,10 +183,6 @@ class DriftGameRepository implements GameRepository {
   }
 
   Future<GameMetadata> _readGameMetadata(int mediaId) async {
-    final modeRows = await (_database.select(_database.gameAvailableModes)
-      ..where((m) => m.mediaId.equals(mediaId)))
-        .get();
-
     final developerRows = await (_database.select(_database.gameDevelopers)
       ..where((d) => d.mediaId.equals(mediaId)))
         .get();
@@ -213,7 +200,6 @@ class DriftGameRepository implements GameRepository {
     );
 
     return GameMetadata(
-      availableModes: modeRows.map((row) => row.mode).toList(),
       developers: developers,
       publishers: publishers,
     );

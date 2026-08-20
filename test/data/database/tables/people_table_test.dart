@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cybershelf/data/database/app_database.dart';
 
-import 'test_database.dart';
+import '../test_database.dart';
 
 void main() {
   late AppDatabase database;

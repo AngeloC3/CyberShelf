@@ -3,6 +3,7 @@ import 'package:cybershelf/domain/date_only.dart';
 import 'package:cybershelf/domain/media/external_id.dart';
 import 'package:cybershelf/domain/media/genre.dart';
 import 'package:cybershelf/domain/media/media_metadata.dart';
+import 'package:cybershelf/domain/media/series.dart';
 import 'package:cybershelf/domain/media/theme.dart';
 
 void main() {
@@ -28,6 +29,13 @@ void main() {
         ),
       ];
 
+      const series = [
+        Series(
+          id: 1,
+          name: 'Test Series',
+        ),
+      ];
+
       const externalIds = [
         ExternalId(
           source: 'igdb',
@@ -42,6 +50,7 @@ void main() {
         releaseDate: releaseDate,
         genres: genres,
         themes: themes,
+        series: series,
         externalIds: externalIds,
       );
 
@@ -51,6 +60,7 @@ void main() {
       expect(metadata.releaseDate, releaseDate);
       expect(metadata.genres, genres);
       expect(metadata.themes, themes);
+      expect(metadata.series, series);
       expect(metadata.externalIds, externalIds);
     });
 
@@ -61,6 +71,7 @@ void main() {
 
       expect(metadata.genres, isEmpty);
       expect(metadata.themes, isEmpty);
+      expect(metadata.series, isEmpty);
       expect(metadata.externalIds, isEmpty);
     });
 
@@ -86,6 +97,12 @@ void main() {
             name: 'Fantasy',
           ),
         ],
+        series: const [
+          Series(
+            id: 1,
+            name: 'Test Series',
+          ),
+        ],
         externalIds: const [
           ExternalId(
             source: 'igdb',
@@ -104,6 +121,7 @@ void main() {
       expect(copy.releaseDate, original.releaseDate);
       expect(copy.genres, original.genres);
       expect(copy.themes, original.themes);
+      expect(copy.series, original.series);
       expect(copy.externalIds, original.externalIds);
     });
 
@@ -131,6 +149,7 @@ void main() {
       expect(copy.releaseDate, isNull);
       expect(copy.genres, original.genres);
       expect(copy.themes, original.themes);
+      expect(copy.series, original.series);
       expect(copy.externalIds, original.externalIds);
     });
 
@@ -182,6 +201,35 @@ void main() {
       );
 
       expect(copy.themes, replacement);
+    });
+
+    test('copyWith can replace series', () {
+      const original = MediaMetadata(
+        title: 'Test Game',
+        series: [
+          Series(
+            id: 1,
+            name: 'Original Series',
+          ),
+        ],
+      );
+
+      const replacement = [
+        Series(
+          id: 2,
+          name: 'New Series',
+        ),
+        Series(
+          id: 3,
+          name: 'Another Series',
+        ),
+      ];
+
+      final copy = original.copyWith(
+        series: replacement,
+      );
+
+      expect(copy.series, replacement);
     });
 
     test('copyWith can replace external IDs', () {

@@ -95,4 +95,17 @@ class FakeGameRepository implements GameRepository {
 
     games.removeWhere((item) => item.media.id == id);
   }
+
+  // Helper method to add contributors to a game's metadata
+  void addContributorsToGame(int gameId, List<dynamic> developers, List<dynamic> publishers) {
+    final index = games.indexWhere((item) => item.media.id == gameId);
+    if (index != -1) {
+      final game = games[index];
+      final updatedMetadata = game.gameMetadata.copyWith(
+        developers: developers.cast(),
+        publishers: publishers.cast(),
+      );
+      games[index] = game.copyWith(gameMetadata: updatedMetadata);
+    }
+  }
 }

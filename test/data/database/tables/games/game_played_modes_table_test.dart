@@ -1,10 +1,10 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cybershelf/data/database/app_database.dart';
-import 'package:cybershelf/domain/game/game_platform.dart';
+import 'package:cybershelf/domain/game/game_mode.dart';
 import 'package:cybershelf/domain/media_type.dart';
 
-import '../test_database.dart';
+import '../../test_database.dart';
 
 void main() {
   late AppDatabase database;
@@ -17,8 +17,8 @@ void main() {
     await database.close();
   });
 
-  group('GamePlayedPlatforms', () {
-    test('can record a platform played for a game', () async {
+  group('GamePlayedModes', () {
+    test('can record a mode played for a game', () async {
       final mediaId = await database.into(database.media).insert(
         MediaCompanion.insert(
           mediaType: MediaType.game,
@@ -33,22 +33,22 @@ void main() {
         ),
       );
 
-      await database.into(database.gamePlayedPlatforms).insert(
-        GamePlayedPlatformsCompanion.insert(
+      await database.into(database.gamePlayedModes).insert(
+        GamePlayedModesCompanion.insert(
           mediaId: mediaId,
-          platform: GamePlatform.pc,
+          mode: GameMode.singlePlayer,
         ),
       );
 
-      final platform = await (database.select(database.gamePlayedPlatforms)
-        ..where((p) => p.mediaId.equals(mediaId)))
+      final playedMode = await (database.select(database.gamePlayedModes)
+        ..where((m) => m.mediaId.equals(mediaId)))
           .getSingle();
 
-      expect(platform.mediaId, mediaId);
-      expect(platform.platform, GamePlatform.pc);
+      expect(playedMode.mediaId, mediaId);
+      expect(playedMode.mode, GameMode.singlePlayer);
     });
 
-    test('allows multiple played platforms for the same game', () async {
+    test('allows multiple played modes for the same game', () async {
       final mediaId = await database.into(database.media).insert(
         MediaCompanion.insert(
           mediaType: MediaType.game,
@@ -63,32 +63,32 @@ void main() {
         ),
       );
 
-      await database.into(database.gamePlayedPlatforms).insert(
-        GamePlayedPlatformsCompanion.insert(
+      await database.into(database.gamePlayedModes).insert(
+        GamePlayedModesCompanion.insert(
           mediaId: mediaId,
-          platform: GamePlatform.pc,
+          mode: GameMode.singlePlayer,
         ),
       );
 
-      await database.into(database.gamePlayedPlatforms).insert(
-        GamePlayedPlatformsCompanion.insert(
+      await database.into(database.gamePlayedModes).insert(
+        GamePlayedModesCompanion.insert(
           mediaId: mediaId,
-          platform: GamePlatform.nintendoSwitch,
+          mode: GameMode.multiplayer,
         ),
       );
 
-      final platforms = await (database.select(database.gamePlayedPlatforms)
-        ..where((p) => p.mediaId.equals(mediaId)))
+      final modes = await (database.select(database.gamePlayedModes)
+        ..where((m) => m.mediaId.equals(mediaId)))
           .get();
 
-      expect(platforms, hasLength(2));
+      expect(modes, hasLength(2));
       expect(
-        platforms.map((p) => p.platform),
-        containsAll([GamePlatform.pc, GamePlatform.nintendoSwitch]),
+        modes.map((m) => m.mode),
+        containsAll([GameMode.singlePlayer, GameMode.multiplayer]),
       );
     });
 
-    test('does not allow duplicate played platforms for the same game',
+    test('does not allow duplicate played modes for the same game',
             () async {
           final mediaId = await database.into(database.media).insert(
             MediaCompanion.insert(
@@ -104,38 +104,37 @@ void main() {
             ),
           );
 
-          await database.into(database.gamePlayedPlatforms).insert(
-            GamePlayedPlatformsCompanion.insert(
+          await database.into(database.gamePlayedModes).insert(
+            GamePlayedModesCompanion.insert(
               mediaId: mediaId,
-              platform: GamePlatform.pc,
+              mode: GameMode.multiplayer,
             ),
           );
 
           expect(
-                () => database.into(database.gamePlayedPlatforms).insert(
-              GamePlayedPlatformsCompanion.insert(
+                () => database.into(database.gamePlayedModes).insert(
+              GamePlayedModesCompanion.insert(
                 mediaId: mediaId,
-                platform: GamePlatform.pc,
+                mode: GameMode.multiplayer,
               ),
             ),
             throwsA(isA<Exception>()),
           );
         });
 
-    test('does not allow a played platform for a nonexistent game',
-            () async {
-          expect(
-                () => database.into(database.gamePlayedPlatforms).insert(
-              GamePlayedPlatformsCompanion.insert(
-                mediaId: 999,
-                platform: GamePlatform.pc,
-              ),
-            ),
-            throwsA(isA<Exception>()),
-          );
-        });
+    test('does not allow a played mode for a nonexistent game', () async {
+      expect(
+            () => database.into(database.gamePlayedModes).insert(
+          GamePlayedModesCompanion.insert(
+            mediaId: 999,
+            mode: GameMode.singlePlayer,
+          ),
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
 
-    test('deleting a game deletes its played platforms', () async {
+    test('deleting a game deletes its played modes', () async {
       final mediaId = await database.into(database.media).insert(
         MediaCompanion.insert(
           mediaType: MediaType.game,
@@ -150,10 +149,10 @@ void main() {
         ),
       );
 
-      await database.into(database.gamePlayedPlatforms).insert(
-        GamePlayedPlatformsCompanion.insert(
+      await database.into(database.gamePlayedModes).insert(
+        GamePlayedModesCompanion.insert(
           mediaId: mediaId,
-          platform: GamePlatform.pc,
+          mode: GameMode.singlePlayer,
         ),
       );
 
@@ -161,11 +160,11 @@ void main() {
         ..where((m) => m.id.equals(mediaId)))
           .go();
 
-      final platforms = await (database.select(database.gamePlayedPlatforms)
-        ..where((p) => p.mediaId.equals(mediaId)))
+      final modes = await (database.select(database.gamePlayedModes)
+        ..where((m) => m.mediaId.equals(mediaId)))
           .get();
 
-      expect(platforms, isEmpty);
+      expect(modes, isEmpty);
     });
   });
 }

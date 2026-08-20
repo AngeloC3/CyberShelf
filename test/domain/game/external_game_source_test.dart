@@ -76,7 +76,7 @@ void main() {
       const gameModes = [GameMode.singlePlayer];
       const developers = ['Valve'];
       const publishers = ['EA'];
-      const series = ['Half-Life'];
+      const series = ['Half-Life', 'Portal'];
 
       final result = ExternalGameResult(
         title: 'Test Game',
@@ -98,6 +98,26 @@ void main() {
       expect(result.publishers, publishers);
       expect(result.releaseDate, releaseDate);
       expect(result.coverUrl, 'https://example.com/cover.jpg');
+      expect(result.series, series);
+    });
+
+    test('series can be empty', () {
+      const result = ExternalGameResult(
+        title: 'Test Game',
+        series: [],
+      );
+
+      expect(result.series, isEmpty);
+    });
+
+    test('series can have multiple entries', () {
+      const series = ['Series 1', 'Series 2', 'Series 3'];
+      const result = ExternalGameResult(
+        title: 'Test Game',
+        series: series,
+      );
+
+      expect(result.series, hasLength(3));
       expect(result.series, series);
     });
   });

@@ -347,19 +347,11 @@ class _GameDetailPageState extends State<GameDetailPage> {
               ],
             ),
             const SizedBox(height: 12),
-            if (game.gameMetadata.availableModes.isNotEmpty)
-              _buildInfoRow(
-                'Available Modes',
-                game.gameMetadata.availableModes
-                    .map((m) => _gameModeLabel(m))
-                    .join(', '),
-              ),
             if (game.gameMetadata.developers.isNotEmpty)
               _buildContributorsRow('Developers', game.gameMetadata.developers),
             if (game.gameMetadata.publishers.isNotEmpty)
               _buildContributorsRow('Publishers', game.gameMetadata.publishers),
-            if (game.gameMetadata.availableModes.isEmpty &&
-                game.gameMetadata.developers.isEmpty &&
+            if (game.gameMetadata.developers.isEmpty &&
                 game.gameMetadata.publishers.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
@@ -920,13 +912,11 @@ class _EditGameMetadataSheet extends StatefulWidget {
 }
 
 class _EditGameMetadataSheetState extends State<_EditGameMetadataSheet> {
-  late Set<GameMode> _availableModes;
   late bool _isLoading;
 
   @override
   void initState() {
     super.initState();
-    _availableModes = widget.game.gameMetadata.availableModes.toSet();
     _isLoading = false;
   }
 
@@ -966,30 +956,6 @@ class _EditGameMetadataSheetState extends State<_EditGameMetadataSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            'Available Modes',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: GameMode.values.map((mode) {
-              final isSelected = _availableModes.contains(mode);
-              return FilterChip(
-                label: Text(_gameModeLabel(mode)),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      _availableModes.add(mode);
-                    } else {
-                      _availableModes.remove(mode);
-                    }
-                  });
-                },
-              );
-            }).toList(),
-          ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -1009,7 +975,7 @@ class _EditGameMetadataSheetState extends State<_EditGameMetadataSheet> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                      : const Text('Save'),
+                      : const Text('Close'),
                 ),
               ),
             ],
@@ -1021,45 +987,7 @@ class _EditGameMetadataSheetState extends State<_EditGameMetadataSheet> {
   }
 
   Future<void> _save() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final updatedGameMetadata = widget.game.gameMetadata.copyWith(
-        availableModes: _availableModes.toList(),
-      );
-
-      final updatedGame = widget.game.copyWith(
-        gameMetadata: updatedGameMetadata,
-      );
-
-      await widget.gameService.update(updatedGame);
-
-      if (mounted) {
-        widget.onSaved();
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Game metadata updated!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
-  }
-
-  String _gameModeLabel(GameMode mode) {
-    return switch (mode) {
-      GameMode.singlePlayer => 'Single Player',
-      GameMode.multiplayer => 'Multiplayer',
-      GameMode.cooperative => 'Co-op',
-      GameMode.competitive => 'Competitive',
-      GameMode.localMultiplayer => 'Local MP',
-      GameMode.onlineMultiplayer => 'Online MP',
-    };
+    Navigator.pop(context);
   }
 }
 

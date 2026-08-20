@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:cybershelf/application/game/game_service.dart';
 import 'package:cybershelf/domain/game/external_game_source.dart';
-import 'package:cybershelf/domain/game/game_mode.dart';
 import 'package:cybershelf/presentation/game/game_detail_page.dart';
 
 class ExternalAddGamePage extends StatefulWidget {
@@ -327,8 +326,19 @@ class _GameResultTile extends StatelessWidget {
                         'Released: ${result.releaseDate}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                    const SizedBox(height: 4),
-                    if (result.genres.isNotEmpty)
+                    if (result.series.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Series: ${result.series.join(', ')}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (result.genres.isNotEmpty) ...[
+                      const SizedBox(height: 2),
                       Text(
                         result.genres.map((g) => g.name).join(', '),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -337,6 +347,7 @@ class _GameResultTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -532,13 +543,6 @@ class _GamePreviewSheetState extends State<_GamePreviewSheet> {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
-                    if (result.gameModes.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Modes: ${result.gameModes.map((m) => _gameModeLabel(m)).join(', ')}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -600,14 +604,4 @@ class _GamePreviewSheetState extends State<_GamePreviewSheet> {
     );
   }
 
-  String _gameModeLabel(GameMode mode) {
-    return switch (mode) {
-      GameMode.singlePlayer => 'Single Player',
-      GameMode.multiplayer => 'Multiplayer',
-      GameMode.cooperative => 'Co-op',
-      GameMode.competitive => 'Competitive',
-      GameMode.localMultiplayer => 'Local MP',
-      GameMode.onlineMultiplayer => 'Online MP',
-    };
-  }
 }

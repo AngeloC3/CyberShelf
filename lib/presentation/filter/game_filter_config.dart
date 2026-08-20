@@ -1,5 +1,4 @@
 import 'package:cybershelf/domain/game/game_item.dart';
-import 'package:cybershelf/domain/game/game_mode.dart';
 import 'package:cybershelf/domain/game/game_platform.dart';
 import 'package:cybershelf/domain/media_status.dart';
 import 'package:cybershelf/presentation/filter/filter_models.dart';
@@ -16,7 +15,6 @@ class GameFilterField extends FilterField {
   static const publisher = GameFilterField('publisher', 'Publisher', FilterFieldType.text);
   static const releaseDate = GameFilterField('releaseDate', 'Release Date', FilterFieldType.date);
   static const playedPlatform = GameFilterField('playedPlatform', 'Played Platform', FilterFieldType.text);
-  static const availableMode = GameFilterField('availableMode', 'Available Mode', FilterFieldType.text);
 
   static const List<FilterField> all = [
     title,
@@ -28,7 +26,6 @@ class GameFilterField extends FilterField {
     publisher,
     releaseDate,
     playedPlatform,
-    availableMode,
   ];
 
   static FilterField fromId(String id) {
@@ -155,20 +152,6 @@ class GameFilterEvaluator implements FilterEvaluator<GameItem> {
             return true;
         }
 
-      case 'availableMode':
-        final modes = game.gameMetadata.availableModes.map((m) => _modeLabel(m)).toList();
-        final searchValue = value?.toString().toLowerCase() ?? '';
-        switch (condition.operator) {
-          case FilterOperator.contains:
-            return modes.any((m) => m.toLowerCase().contains(searchValue));
-          case FilterOperator.equals:
-            return modes.contains(searchValue);
-          case FilterOperator.notEquals:
-            return !modes.contains(searchValue);
-          default:
-            return true;
-        }
-
       default:
         return true;
     }
@@ -180,17 +163,6 @@ class GameFilterEvaluator implements FilterEvaluator<GameItem> {
       MediaStatus.inProgress => 'In Progress',
       MediaStatus.completed => 'Completed',
       MediaStatus.dropped => 'Dropped',
-    };
-  }
-
-  String _modeLabel(GameMode mode) {
-    return switch (mode) {
-      GameMode.singlePlayer => 'Single Player',
-      GameMode.multiplayer => 'Multiplayer',
-      GameMode.cooperative => 'Co-op',
-      GameMode.competitive => 'Competitive',
-      GameMode.localMultiplayer => 'Local MP',
-      GameMode.onlineMultiplayer => 'Online MP',
     };
   }
 

@@ -11,6 +11,7 @@ import 'package:cybershelf/domain/media/contributor.dart' as domain;
 import 'package:cybershelf/domain/media/genre.dart' as domain;
 import 'package:cybershelf/domain/media/media_metadata.dart';
 import 'package:cybershelf/domain/media/media_user_data.dart';
+import 'package:cybershelf/domain/media/series.dart' as domain;
 import 'package:cybershelf/domain/media/tag.dart' as domain;
 import 'package:cybershelf/domain/media/theme.dart' as domain;
 import 'package:cybershelf/domain/media_status.dart';
@@ -31,8 +32,8 @@ void main() {
     await database.delete(database.mediaTags).go();
     await database.delete(database.mediaGenres).go();
     await database.delete(database.mediaThemes).go();
+    await database.delete(database.mediaSeries).go();
     await database.delete(database.externalIds).go();
-    await database.delete(database.gameAvailableModes).go();
     await database.delete(database.gamePlayedModes).go();
     await database.delete(database.gamePlayedPlatforms).go();
     await database.delete(database.gameDevelopers).go();
@@ -45,6 +46,7 @@ void main() {
     await database.delete(database.mediaMetadata).go();
     await database.delete(database.genres).go();
     await database.delete(database.themes).go();
+    await database.delete(database.series).go();
     await database.delete(database.tags).go();
     await database.delete(database.media).go();
   }
@@ -64,7 +66,6 @@ void main() {
     setUp(() async {
       // Clear all tables in the correct order to avoid foreign key violations
       await clearDatabase();
-
     });
 
     test('create creates a game through the repository', () async {
@@ -73,9 +74,7 @@ void main() {
 
       const metadata = MediaMetadata(title: 'Test Game');
       const userData = MediaUserData(status: MediaStatus.planned);
-      const gameMetadata = GameMetadata(
-        availableModes: [GameMode.singlePlayer],
-      );
+      const gameMetadata = GameMetadata();
       const gameUserData = GameUserData(
         playedModes: [GameMode.singlePlayer],
         playedPlatforms: [GamePlatform.pc],
@@ -91,7 +90,8 @@ void main() {
       expect(result.media.id, 1);
       expect(result.media.metadata.title, 'Test Game');
       expect(result.media.userData.status, MediaStatus.planned);
-      expect(result.gameMetadata.availableModes, [GameMode.singlePlayer]);
+      expect(result.gameMetadata.developers, isEmpty);
+      expect(result.gameMetadata.publishers, isEmpty);
       expect(result.gameUserData.playedModes, [GameMode.singlePlayer]);
       expect(result.gameUserData.playedPlatforms, [GamePlatform.pc]);
 
@@ -104,17 +104,14 @@ void main() {
 
     test('update updates a game through the repository', () async {
       final repository = FakeGameRepository();
+      final service = GameService(repository, database);
 
       final original = await repository.create(
         metadata: const MediaMetadata(title: 'Original Title'),
         userData: const MediaUserData(status: MediaStatus.planned),
-        gameMetadata: const GameMetadata(
-          availableModes: [GameMode.singlePlayer],
-        ),
+        gameMetadata: const GameMetadata(),
         gameUserData: const GameUserData(),
       );
-
-      final service = GameService(repository, database);
 
       final updated = original.copyWith(
         media: original.media.copyWith(
@@ -125,9 +122,6 @@ void main() {
             status: MediaStatus.completed,
           ),
         ),
-        gameMetadata: original.gameMetadata.copyWith(
-          availableModes: [GameMode.singlePlayer, GameMode.cooperative],
-        ),
         gameUserData: original.gameUserData.copyWith(
           playedModes: [GameMode.cooperative],
           playedPlatforms: [GamePlatform.steamDeck],
@@ -136,11 +130,11 @@ void main() {
 
       final result = await service.update(updated);
 
-      // Compare individual properties instead of the whole object
       expect(result.media.id, updated.media.id);
       expect(result.media.metadata.title, updated.media.metadata.title);
       expect(result.media.userData.status, updated.media.userData.status);
-      expect(result.gameMetadata.availableModes, updated.gameMetadata.availableModes);
+      expect(result.gameMetadata.developers, isEmpty);
+      expect(result.gameMetadata.publishers, isEmpty);
       expect(result.gameUserData.playedModes, updated.gameUserData.playedModes);
       expect(result.gameUserData.playedPlatforms, updated.gameUserData.playedPlatforms);
 
@@ -243,7 +237,7 @@ void main() {
           publishers: ['Publisher 1'],
           releaseDate: releaseDate,
           coverUrl: 'https://example.com/cover.jpg',
-          series: ['Series 1'],
+          series: ['Series 1', 'Series 2'],
         );
 
         final result = await service.importFromExternalSource(externalResult);
@@ -254,10 +248,21 @@ void main() {
         expect(result.media.metadata.genres[1].name, 'RPG');
         expect(result.media.metadata.themes, hasLength(1));
         expect(result.media.metadata.themes[0].name, 'Fantasy');
+
+        // Verify series are proper Series domain objects
+        expect(result.media.metadata.series, hasLength(2));
+        expect(result.media.metadata.series[0], isA<domain.Series>());
+        expect(result.media.metadata.series[0].name, 'Series 1');
+        expect(result.media.metadata.series[0].id, isNot(0));
+        expect(result.media.metadata.series[1], isA<domain.Series>());
+        expect(result.media.metadata.series[1].name, 'Series 2');
+        expect(result.media.metadata.series[1].id, isNot(0));
+
         expect(result.media.metadata.releaseDate, releaseDate);
         expect(result.media.metadata.coverUrl, 'https://example.com/cover.jpg');
         expect(result.media.userData.status, MediaStatus.planned);
-        expect(result.gameMetadata.availableModes, gameModes);
+        expect(result.gameMetadata.developers, hasLength(1));
+        expect(result.gameMetadata.publishers, hasLength(1));
         expect(result.gameUserData.playedModes, isEmpty);
         expect(result.gameUserData.playedPlatforms, isEmpty);
 
@@ -277,21 +282,23 @@ void main() {
         expect(result.media.metadata.title, 'Minimal Game');
         expect(result.media.metadata.genres, isEmpty);
         expect(result.media.metadata.themes, isEmpty);
+        expect(result.media.metadata.series, isEmpty);
         expect(result.media.metadata.releaseDate, null);
         expect(result.media.metadata.coverUrl, null);
         expect(result.media.userData.status, MediaStatus.planned);
-        expect(result.gameMetadata.availableModes, isEmpty);
+        expect(result.gameMetadata.developers, isEmpty);
+        expect(result.gameMetadata.publishers, isEmpty);
         expect(result.gameUserData.playedModes, isEmpty);
         expect(result.gameUserData.playedPlatforms, isEmpty);
 
         expect(repository.createCallCount, 1);
       });
 
-      test('reuses existing genres and themes', () async {
+      test('reuses existing genres, themes, and series', () async {
         final repository = FakeGameRepository();
         final service = GameService(repository, database);
 
-        // Pre-populate a genre and theme
+        // Pre-populate a genre, theme, and series
         final existingGenreId = await database.into(database.genres).insert(
           GenresCompanion.insert(name: 'Action'),
         );
@@ -300,34 +307,58 @@ void main() {
           ThemesCompanion.insert(name: 'Fantasy'),
         );
 
-        final genres = [
-          domain.Genre(id: 1, name: 'Action'),
-          domain.Genre(id: 2, name: 'RPG'),
-        ];
-        final themes = [
-          domain.Theme(id: 1, name: 'Fantasy'),
-          domain.Theme(id: 2, name: 'Sci-Fi'),
-        ];
+        final existingSeriesId = await database.into(database.series).insert(
+          SeriesCompanion.insert(name: 'Series 1'),
+        );
 
         final externalResult = ExternalGameResult(
           title: 'Imported Game',
-          genres: genres,
-          themes: themes,
+          genres: [
+            domain.Genre(id: 1, name: 'Action'),
+            domain.Genre(id: 2, name: 'RPG'),
+          ],
+          themes: [
+            domain.Theme(id: 1, name: 'Fantasy'),
+            domain.Theme(id: 2, name: 'Sci-Fi'),
+          ],
+          series: ['Series 1', 'Series 2'],
         );
 
         final result = await service.importFromExternalSource(externalResult);
 
-        // Action and Fantasy should reuse existing IDs
+        // Verify genres are proper domain objects
+        expect(result.media.metadata.genres, hasLength(2));
         expect(result.media.metadata.genres[0].id, existingGenreId);
+        expect(result.media.metadata.genres[0].name, 'Action');
         expect(result.media.metadata.genres[1].id, isNot(existingGenreId));
-        expect(result.media.metadata.themes[0].id, existingThemeId);
-        expect(result.media.metadata.themes[1].id, isNot(existingThemeId));
+        expect(result.media.metadata.genres[1].name, 'RPG');
 
-        // Verify the new genre and theme were created
+        // Verify themes are proper domain objects
+        expect(result.media.metadata.themes, hasLength(2));
+        expect(result.media.metadata.themes[0].id, existingThemeId);
+        expect(result.media.metadata.themes[0].name, 'Fantasy');
+        expect(result.media.metadata.themes[1].id, isNot(existingThemeId));
+        expect(result.media.metadata.themes[1].name, 'Sci-Fi');
+
+        // Verify series are proper Series domain objects
+        expect(result.media.metadata.series, hasLength(2));
+        expect(result.media.metadata.series[0], isA<domain.Series>());
+        expect(result.media.metadata.series[0].id, existingSeriesId);
+        expect(result.media.metadata.series[0].name, 'Series 1');
+        expect(result.media.metadata.series[1], isA<domain.Series>());
+        expect(result.media.metadata.series[1].id, isNot(existingSeriesId));
+        expect(result.media.metadata.series[1].name, 'Series 2');
+
+        // Verify the new genre, theme, and series were created in the database
         final allGenres = await database.select(database.genres).get();
         final allThemes = await database.select(database.themes).get();
+        final allSeries = await database.select(database.series).get();
         expect(allGenres, hasLength(2));
         expect(allThemes, hasLength(2));
+        expect(allSeries, hasLength(2));
+
+        // Verify the series names are correct
+        expect(allSeries.map((s) => s.name), containsAll(['Series 1', 'Series 2']));
       });
     });
 
@@ -938,9 +969,9 @@ void main() {
           releaseDate: DateOnly(year: 2024, month: 11, day: 15),
           genreNames: ['Action', 'RPG'],
           themeNames: ['Fantasy'],
+          seriesNames: ['Series 1', 'Series 2'],
           developerNames: ['Developer 1'],
           publisherNames: ['Publisher 1'],
-          availableModes: [GameMode.singlePlayer, GameMode.multiplayer],
           playedModes: [GameMode.singlePlayer, GameMode.cooperative],
           playedPlatforms: [GamePlatform.pc, GamePlatform.nintendoSwitch],
           status: MediaStatus.completed,
@@ -954,8 +985,9 @@ void main() {
         expect(result.media.metadata.genres.map((g) => g.name), containsAll(['Action', 'RPG']));
         expect(result.media.metadata.themes, hasLength(1));
         expect(result.media.metadata.themes[0].name, 'Fantasy');
+        expect(result.media.metadata.series, hasLength(2));
+        expect(result.media.metadata.series.map((s) => s.name), containsAll(['Series 1', 'Series 2']));
         expect(result.media.userData.status, MediaStatus.completed);
-        expect(result.gameMetadata.availableModes, [GameMode.singlePlayer, GameMode.multiplayer]);
         expect(result.gameMetadata.developers, hasLength(1));
         expect(result.gameMetadata.publishers, hasLength(1));
         expect(result.gameUserData.playedModes, [GameMode.singlePlayer, GameMode.cooperative]);
@@ -973,50 +1005,61 @@ void main() {
         expect(result.media.metadata.releaseDate, null);
         expect(result.media.metadata.genres, isEmpty);
         expect(result.media.metadata.themes, isEmpty);
+        expect(result.media.metadata.series, isEmpty);
         expect(result.media.userData.status, MediaStatus.planned);
-        expect(result.gameMetadata.availableModes, isEmpty);
         expect(result.gameMetadata.developers, isEmpty);
         expect(result.gameMetadata.publishers, isEmpty);
         expect(result.gameUserData.playedModes, isEmpty);
         expect(result.gameUserData.playedPlatforms, isEmpty);
       });
 
-      test('reuses existing genres and themes by name', () async {
-        // Pre-create a genre and theme
+      test('reuses existing genres, themes, and series by name', () async {
+        // Pre-create a genre, theme, and series
         await database.into(database.genres).insert(
           GenresCompanion.insert(name: 'Action'),
         );
         await database.into(database.themes).insert(
           ThemesCompanion.insert(name: 'Fantasy'),
         );
+        await database.into(database.series).insert(
+          SeriesCompanion.insert(name: 'Series 1'),
+        );
 
         final result = await service.createManual(
           title: 'Test Game',
           genreNames: ['Action', 'RPG'],
           themeNames: ['Fantasy', 'Sci-Fi'],
+          seriesNames: ['Series 1', 'Series 2'],
         );
 
-        // Action and Fantasy should be reused
+        // Action, Fantasy, and Series 1 should be reused
         final genres = result.media.metadata.genres;
         final themes = result.media.metadata.themes;
+        final series = result.media.metadata.series;
 
         // Find the IDs
         final actionGenre = genres.firstWhere((g) => g.name == 'Action');
         final rpgGenre = genres.firstWhere((g) => g.name == 'RPG');
         final fantasyTheme = themes.firstWhere((t) => t.name == 'Fantasy');
         final sciFiTheme = themes.firstWhere((t) => t.name == 'Sci-Fi');
+        final series1 = series.firstWhere((s) => s.name == 'Series 1');
+        final series2 = series.firstWhere((s) => s.name == 'Series 2');
 
-        // Action and Fantasy should have IDs from pre-created records
+        // Action, Fantasy, and Series 1 should have IDs from pre-created records
         expect(actionGenre.id, isNot(0));
         expect(rpgGenre.id, isNot(0));
         expect(fantasyTheme.id, isNot(0));
         expect(sciFiTheme.id, isNot(0));
+        expect(series1.id, isNot(0));
+        expect(series2.id, isNot(0));
 
         // Verify total records
         final allGenres = await database.select(database.genres).get();
         final allThemes = await database.select(database.themes).get();
+        final allSeries = await database.select(database.series).get();
         expect(allGenres, hasLength(2));
         expect(allThemes, hasLength(2));
+        expect(allSeries, hasLength(2));
       });
 
       test('reuses existing developers and publishers by name', () async {

@@ -55,6 +55,7 @@ void main() {
                   'cover': {'image_id': 'abc123'},
                   'collections': [
                     {'name': 'Half-Life Series'},
+                    {'name': 'Valve Classics'},
                   ],
                 },
                 {
@@ -78,6 +79,33 @@ void main() {
                   'cover': {'image_id': 'def456'},
                   'collections': [
                     {'name': 'Half-Life Series'},
+                  ],
+                },
+                {
+                  'id': 1022,
+                  'name': 'Portal',
+                  'genres': [
+                    {'id': 5, 'name': 'Shooter'},
+                    {'id': 7, 'name': 'Puzzle'},
+                  ],
+                  'themes': [
+                    {'id': 42, 'name': 'Science fiction'},
+                  ],
+                  'game_modes': [
+                    {'name': 'Single Player'},
+                  ],
+                  'involved_companies': [
+                    {
+                      'company': {'name': 'Valve'},
+                      'developer': true,
+                      'publisher': true,
+                    },
+                  ],
+                  'first_release_date': 1170201600, // 2007-01-30 12:00:00 UTC (fixed)
+                  'cover': {'image_id': 'ghi789'},
+                  'collections': [
+                    {'name': 'Half-Life Series'},
+                    {'name': 'Portal Series'},
                   ],
                 },
               ]),
@@ -158,9 +186,9 @@ void main() {
     test('searchGames returns parsed results from IGDB response', () async {
       final results = await source.searchGames('Half-Life');
 
-      expect(results, hasLength(2));
+      expect(results, hasLength(3));
 
-      // First result
+      // First result - Half-Life
       final first = results[0];
       expect(first.title, 'Half-Life');
       expect(first.genres, hasLength(2));
@@ -179,9 +207,9 @@ void main() {
         first.coverUrl,
         'https://images.igdb.com/igdb/image/upload/t_cover_big/abc123.jpg',
       );
-      expect(first.series, ['Half-Life Series']);
+      expect(first.series, ['Half-Life Series', 'Valve Classics']);
 
-      // Second result
+      // Second result - Half-Life 2
       final second = results[1];
       expect(second.title, 'Half-Life 2');
       expect(second.genres, hasLength(1));
@@ -196,6 +224,24 @@ void main() {
         'https://images.igdb.com/igdb/image/upload/t_cover_big/def456.jpg',
       );
       expect(second.series, ['Half-Life Series']);
+
+      // Third result - Portal (has multiple series)
+      final third = results[2];
+      expect(third.title, 'Portal');
+      expect(third.genres, hasLength(2));
+      expect(third.genres[0].name, 'Shooter');
+      expect(third.genres[1].name, 'Puzzle');
+      expect(third.themes, hasLength(1));
+      expect(third.themes[0].name, 'Science fiction');
+      expect(third.gameModes, [GameMode.singlePlayer]);
+      expect(third.developers, ['Valve']);
+      expect(third.publishers, ['Valve']);
+      expect(third.releaseDate, DateOnly(year: 2007, month: 1, day: 30));
+      expect(
+        third.coverUrl,
+        'https://images.igdb.com/igdb/image/upload/t_cover_big/ghi789.jpg',
+      );
+      expect(third.series, ['Half-Life Series', 'Portal Series']);
     });
 
     test('searchGames handles games with missing optional fields', () async {
@@ -214,7 +260,7 @@ void main() {
               {
                 'id': 9999,
                 'name': 'Minimal Game',
-                // No genres, themes, game_modes, involved_companies, etc.
+                // No genres, themes, game_modes, involved_companies, collections, etc.
               },
             ]),
             200,
@@ -241,6 +287,48 @@ void main() {
       expect(results[0].publishers, isEmpty);
       expect(results[0].releaseDate, isNull);
       expect(results[0].coverUrl, isNull);
+      expect(results[0].series, isEmpty);
+    });
+
+    test('searchGames handles games with no collections', () async {
+      // Override mock for this test
+      final noCollectionsClient = MockClient((request) async {
+        if (request.url.path == '/oauth2/token') {
+          return http.Response(
+            jsonEncode({'access_token': 'mock-token'}),
+            200,
+          );
+        }
+
+        if (request.url.path == '/v4/games') {
+          return http.Response(
+            jsonEncode([
+              {
+                'id': 9999,
+                'name': 'No Series Game',
+                'genres': [
+                  {'id': 5, 'name': 'Shooter'},
+                ],
+                // No collections field
+              },
+            ]),
+            200,
+          );
+        }
+
+        return http.Response('Not found', 404);
+      });
+
+      final noCollectionsSource = IgdbGameSource(
+        clientId: 'mock-client-id',
+        clientSecret: 'mock-client-secret',
+        httpClient: noCollectionsClient,
+      );
+
+      final results = await noCollectionsSource.searchGames('No Series');
+
+      expect(results, hasLength(1));
+      expect(results[0].title, 'No Series Game');
       expect(results[0].series, isEmpty);
     });
 

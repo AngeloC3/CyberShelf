@@ -14,4 +14,15 @@ class Contributor {
 
   bool get isPerson => personId != null;
   bool get isCompany => companyId != null;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is Contributor &&
+              id == other.id &&
+              personId == other.personId &&
+              companyId == other.companyId;
+
+  @override
+  int get hashCode => Object.hash(id, personId, companyId);
 }

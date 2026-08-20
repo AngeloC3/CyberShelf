@@ -38,7 +38,6 @@ class _ManualAddGamePageState extends State<ManualAddGamePage> {
   final List<String> _series = [];
   final List<String> _developers = [];
   final List<String> _publishers = [];
-  final Set<GameMode> _availableModes = {};
   final Set<GameMode> _playedModes = {};
   final Set<GamePlatform> _playedPlatforms = {};
   bool _isLoading = false;
@@ -201,33 +200,6 @@ class _ManualAddGamePageState extends State<ManualAddGamePage> {
               ),
               const SizedBox(height: 16),
 
-              // Available Modes
-              Text(
-                'Available Modes',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: GameMode.values.map((mode) {
-                  final isSelected = _availableModes.contains(mode);
-                  return FilterChip(
-                    label: Text(_gameModeLabel(mode)),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          _availableModes.add(mode);
-                        } else {
-                          _availableModes.remove(mode);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-
               // Played Modes
               Text(
                 'Played Modes',
@@ -377,7 +349,6 @@ class _ManualAddGamePageState extends State<ManualAddGamePage> {
         seriesNames: _series,
         developerNames: _developers,
         publisherNames: _publishers,
-        availableModes: _availableModes.toList(),
         playedModes: _playedModes.toList(),
         playedPlatforms: _playedPlatforms.toList(),
         status: _status,

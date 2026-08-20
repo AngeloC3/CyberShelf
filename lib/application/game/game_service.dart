@@ -179,9 +179,9 @@ class GameService {
       series: domainSeries,
     );
 
-    // Create game metadata with available modes first, then resolve developers and publishers
+    // Create game metadata and resolve developers and publishers
     final gameMetadata = await _resolveDeveloperAndPublisherNames(
-      GameMetadata(availableModes: result.gameModes),
+      const GameMetadata(),
       result.developers,
       result.publishers,
     );
@@ -213,7 +213,6 @@ class GameService {
     List<String> seriesNames = const [],
     List<String> developerNames = const [],
     List<String> publisherNames = const [],
-    List<GameMode> availableModes = const [],
     List<GameMode> playedModes = const [],
     List<GamePlatform> playedPlatforms = const [],
     MediaStatus status = MediaStatus.planned,
@@ -290,7 +289,7 @@ class GameService {
 
     final userData = MediaUserData(status: status);
 
-    final gameMetadata = GameMetadata(availableModes: availableModes);
+    final gameMetadata = const GameMetadata();
 
     final gameUserData = GameUserData(
       playedModes: playedModes,

@@ -41,7 +41,7 @@ part 'app_database.g.dart';
     Tags,
     MediaTags,
     Games,
-    GameAvailableModes,
+    // GameAvailableModes,  // REMOVED - no longer used
     GamePlayedModes,
     GamePlayedPlatforms,
     People,
@@ -52,7 +52,7 @@ part 'app_database.g.dart';
     Themes,
     MediaThemes,
     Series,
-    MediaSeries
+    MediaSeries,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -68,5 +68,18 @@ class AppDatabase extends _$AppDatabase {
   );
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          // Create the new tables
+          await m.createTable(series);
+          await m.createTable(mediaSeries);
+        }
+      },
+    );
+  }
 }

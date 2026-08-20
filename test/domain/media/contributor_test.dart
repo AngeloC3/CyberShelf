@@ -46,5 +46,62 @@ void main() {
         throwsA(isA<AssertionError>()),
       );
     });
+
+    test('equality - same values are equal', () {
+      const contributor1 = Contributor(
+        id: 1,
+        personId: 10,
+      );
+
+      const contributor2 = Contributor(
+        id: 1,
+        personId: 10,
+      );
+
+      expect(contributor1, equals(contributor2));
+      expect(contributor1.hashCode, equals(contributor2.hashCode));
+    });
+
+    test('equality - different ids are not equal', () {
+      const contributor1 = Contributor(
+        id: 1,
+        personId: 10,
+      );
+
+      const contributor2 = Contributor(
+        id: 2,
+        personId: 10,
+      );
+
+      expect(contributor1, isNot(equals(contributor2)));
+    });
+
+    test('equality - different personIds are not equal', () {
+      const contributor1 = Contributor(
+        id: 1,
+        personId: 10,
+      );
+
+      const contributor2 = Contributor(
+        id: 1,
+        personId: 20,
+      );
+
+      expect(contributor1, isNot(equals(contributor2)));
+    });
+
+    test('equality - person vs company are not equal', () {
+      const contributor1 = Contributor(
+        id: 1,
+        personId: 10,
+      );
+
+      const contributor2 = Contributor(
+        id: 1,
+        companyId: 10,
+      );
+
+      expect(contributor1, isNot(equals(contributor2)));
+    });
   });
 }

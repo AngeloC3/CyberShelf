@@ -4,7 +4,7 @@ import 'package:cybershelf/data/database/app_database.dart';
 import 'package:cybershelf/domain/date_only.dart';
 import 'package:cybershelf/domain/media_type.dart';
 
-import 'test_database.dart';
+import '../test_database.dart';
 
 void main() {
   late AppDatabase database;

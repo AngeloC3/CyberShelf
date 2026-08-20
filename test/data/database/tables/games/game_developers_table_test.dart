@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cybershelf/data/database/app_database.dart';
 import 'package:cybershelf/domain/media_type.dart';
 
-import '../test_database.dart';
+import '../../test_database.dart';
 
 void main() {
   late AppDatabase database;
@@ -16,8 +16,8 @@ void main() {
     await database.close();
   });
 
-  group('GamePublishers', () {
-    test('can assign a contributor as a game publisher', () async {
+  group('GameDevelopers', () {
+    test('can assign a contributor as a game developer', () async {
       final mediaId = await database.into(database.media).insert(
         MediaCompanion.insert(
           mediaType: MediaType.game,
@@ -32,34 +32,34 @@ void main() {
         ),
       );
 
-      final companyId = await database.into(database.companies).insert(
-        CompaniesCompanion.insert(
-          name: 'Valve',
+      final personId = await database.into(database.people).insert(
+        PeopleCompanion.insert(
+          name: 'Hideo Kojima',
         ),
       );
 
       final contributorId = await database.into(database.contributors).insert(
         ContributorsCompanion.insert(
-          companyId: Value(companyId),
+          personId: Value(personId),
         ),
       );
 
-      await database.into(database.gamePublishers).insert(
-        GamePublishersCompanion.insert(
+      await database.into(database.gameDevelopers).insert(
+        GameDevelopersCompanion.insert(
           mediaId: mediaId,
           contributorId: contributorId,
         ),
       );
 
-      final publisher = await (database.select(database.gamePublishers)
-        ..where((p) => p.mediaId.equals(mediaId)))
+      final developer = await (database.select(database.gameDevelopers)
+        ..where((d) => d.mediaId.equals(mediaId)))
           .getSingle();
 
-      expect(publisher.mediaId, mediaId);
-      expect(publisher.contributorId, contributorId);
+      expect(developer.mediaId, mediaId);
+      expect(developer.contributorId, contributorId);
     });
 
-    test('allows multiple publishers for the same game', () async {
+    test('allows multiple developers for the same game', () async {
       final mediaId = await database.into(database.media).insert(
         MediaCompanion.insert(
           mediaType: MediaType.game,
@@ -74,61 +74,61 @@ void main() {
         ),
       );
 
-      final firstCompanyId = await database.into(database.companies).insert(
-        CompaniesCompanion.insert(
-          name: 'Valve',
+      final personId = await database.into(database.people).insert(
+        PeopleCompanion.insert(
+          name: 'Hideo Kojima',
         ),
       );
 
-      final secondCompanyId = await database.into(database.companies).insert(
+      final companyId = await database.into(database.companies).insert(
         CompaniesCompanion.insert(
-          name: 'Nintendo',
+          name: 'Konami',
         ),
       );
 
-      final firstContributorId =
+      final personContributorId =
       await database.into(database.contributors).insert(
         ContributorsCompanion.insert(
-          companyId: Value(firstCompanyId),
+          personId: Value(personId),
         ),
       );
 
-      final secondContributorId =
+      final companyContributorId =
       await database.into(database.contributors).insert(
         ContributorsCompanion.insert(
-          companyId: Value(secondCompanyId),
+          companyId: Value(companyId),
         ),
       );
 
-      await database.into(database.gamePublishers).insert(
-        GamePublishersCompanion.insert(
+      await database.into(database.gameDevelopers).insert(
+        GameDevelopersCompanion.insert(
           mediaId: mediaId,
-          contributorId: firstContributorId,
+          contributorId: personContributorId,
         ),
       );
 
-      await database.into(database.gamePublishers).insert(
-        GamePublishersCompanion.insert(
+      await database.into(database.gameDevelopers).insert(
+        GameDevelopersCompanion.insert(
           mediaId: mediaId,
-          contributorId: secondContributorId,
+          contributorId: companyContributorId,
         ),
       );
 
-      final publishers = await (database.select(database.gamePublishers)
-        ..where((p) => p.mediaId.equals(mediaId)))
+      final developers = await (database.select(database.gameDevelopers)
+        ..where((d) => d.mediaId.equals(mediaId)))
           .get();
 
-      expect(publishers, hasLength(2));
+      expect(developers, hasLength(2));
       expect(
-        publishers.map((p) => p.contributorId),
+        developers.map((d) => d.contributorId),
         containsAll([
-          firstContributorId,
-          secondContributorId,
+          personContributorId,
+          companyContributorId,
         ]),
       );
     });
 
-    test('allows the same contributor to publish multiple games', () async {
+    test('allows the same contributor to develop multiple games', () async {
       final firstMediaId = await database.into(database.media).insert(
         MediaCompanion.insert(
           mediaType: MediaType.game,
@@ -159,7 +159,7 @@ void main() {
 
       final companyId = await database.into(database.companies).insert(
         CompaniesCompanion.insert(
-          name: 'Nintendo',
+          name: 'Valve',
         ),
       );
 
@@ -169,28 +169,28 @@ void main() {
         ),
       );
 
-      await database.into(database.gamePublishers).insert(
-        GamePublishersCompanion.insert(
+      await database.into(database.gameDevelopers).insert(
+        GameDevelopersCompanion.insert(
           mediaId: firstMediaId,
           contributorId: contributorId,
         ),
       );
 
-      await database.into(database.gamePublishers).insert(
-        GamePublishersCompanion.insert(
+      await database.into(database.gameDevelopers).insert(
+        GameDevelopersCompanion.insert(
           mediaId: secondMediaId,
           contributorId: contributorId,
         ),
       );
 
-      final relationships = await (database.select(database.gamePublishers)
-        ..where((p) => p.contributorId.equals(contributorId)))
+      final relationships = await (database.select(database.gameDevelopers)
+        ..where((d) => d.contributorId.equals(contributorId)))
           .get();
 
       expect(relationships, hasLength(2));
     });
 
-    test('does not allow duplicate publisher relationships', () async {
+    test('does not allow duplicate developer relationships', () async {
       final mediaId = await database.into(database.media).insert(
         MediaCompanion.insert(
           mediaType: MediaType.game,
@@ -217,16 +217,16 @@ void main() {
         ),
       );
 
-      await database.into(database.gamePublishers).insert(
-        GamePublishersCompanion.insert(
+      await database.into(database.gameDevelopers).insert(
+        GameDevelopersCompanion.insert(
           mediaId: mediaId,
           contributorId: contributorId,
         ),
       );
 
       expect(
-            () => database.into(database.gamePublishers).insert(
-          GamePublishersCompanion.insert(
+            () => database.into(database.gameDevelopers).insert(
+          GameDevelopersCompanion.insert(
             mediaId: mediaId,
             contributorId: contributorId,
           ),
@@ -235,7 +235,7 @@ void main() {
       );
     });
 
-    test('does not allow a publisher relationship for a nonexistent game',
+    test('does not allow a developer relationship for a nonexistent game',
             () async {
           final companyId = await database.into(database.companies).insert(
             CompaniesCompanion.insert(
@@ -250,8 +250,8 @@ void main() {
           );
 
           expect(
-                () => database.into(database.gamePublishers).insert(
-              GamePublishersCompanion.insert(
+                () => database.into(database.gameDevelopers).insert(
+              GameDevelopersCompanion.insert(
                 mediaId: 999,
                 contributorId: contributorId,
               ),
@@ -261,7 +261,7 @@ void main() {
         });
 
     test(
-        'does not allow a publisher relationship for a nonexistent contributor',
+        'does not allow a developer relationship for a nonexistent contributor',
             () async {
           final mediaId = await database.into(database.media).insert(
             MediaCompanion.insert(
@@ -278,8 +278,8 @@ void main() {
           );
 
           expect(
-                () => database.into(database.gamePublishers).insert(
-              GamePublishersCompanion.insert(
+                () => database.into(database.gameDevelopers).insert(
+              GameDevelopersCompanion.insert(
                 mediaId: mediaId,
                 contributorId: 999,
               ),
@@ -288,7 +288,7 @@ void main() {
           );
         });
 
-    test('deleting a game removes its publisher relationships', () async {
+    test('deleting a game removes its developer relationships', () async {
       final mediaId = await database.into(database.media).insert(
         MediaCompanion.insert(
           mediaType: MediaType.game,
@@ -315,8 +315,8 @@ void main() {
         ),
       );
 
-      await database.into(database.gamePublishers).insert(
-        GamePublishersCompanion.insert(
+      await database.into(database.gameDevelopers).insert(
+        GameDevelopersCompanion.insert(
           mediaId: mediaId,
           contributorId: contributorId,
         ),
@@ -326,14 +326,14 @@ void main() {
         ..where((m) => m.id.equals(mediaId)))
           .go();
 
-      final relationships = await (database.select(database.gamePublishers)
-        ..where((p) => p.mediaId.equals(mediaId)))
+      final relationships = await (database.select(database.gameDevelopers)
+        ..where((d) => d.mediaId.equals(mediaId)))
           .get();
 
       expect(relationships, isEmpty);
     });
 
-    test('deleting a contributor removes its publisher relationships',
+    test('deleting a contributor removes its developer relationships',
             () async {
           final mediaId = await database.into(database.media).insert(
             MediaCompanion.insert(
@@ -361,8 +361,8 @@ void main() {
             ),
           );
 
-          await database.into(database.gamePublishers).insert(
-            GamePublishersCompanion.insert(
+          await database.into(database.gameDevelopers).insert(
+            GameDevelopersCompanion.insert(
               mediaId: mediaId,
               contributorId: contributorId,
             ),
@@ -372,8 +372,8 @@ void main() {
             ..where((c) => c.id.equals(contributorId)))
               .go();
 
-          final relationships = await (database.select(database.gamePublishers)
-            ..where((p) => p.contributorId.equals(contributorId)))
+          final relationships = await (database.select(database.gameDevelopers)
+            ..where((d) => d.contributorId.equals(contributorId)))
               .get();
 
           expect(relationships, isEmpty);

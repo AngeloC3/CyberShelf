@@ -42,25 +42,6 @@ void main() {
     expect(storedGames.single.mediaId, game.media.id);
   });
 
-  test('create stores and returns available modes', () async {
-    final game = await repository.create(
-      metadata: const MediaMetadata(title: 'Test Game'),
-      userData: const MediaUserData(status: MediaStatus.planned),
-      gameMetadata: const GameMetadata(
-        availableModes: [GameMode.singlePlayer, GameMode.cooperative],
-      ),
-      gameUserData: const GameUserData(),
-    );
-
-    expect(game.gameMetadata.availableModes, [
-      GameMode.singlePlayer,
-      GameMode.cooperative,
-    ]);
-
-    final stored = await database.select(database.gameAvailableModes).get();
-    expect(stored, hasLength(2));
-  });
-
   test('create stores and returns played modes and platforms', () async {
     final game = await repository.create(
       metadata: const MediaMetadata(title: 'Test Game'),
@@ -136,9 +117,7 @@ void main() {
         status: MediaStatus.completed,
         rating: 90,
       ),
-      gameMetadata: const GameMetadata(
-        availableModes: [GameMode.singlePlayer],
-      ),
+      gameMetadata: const GameMetadata(),
       gameUserData: const GameUserData(
         playedModes: [GameMode.singlePlayer],
         playedPlatforms: [GamePlatform.pc],
@@ -151,7 +130,8 @@ void main() {
     expect(result!.media.id, created.media.id);
     expect(result.media.metadata.title, 'Test Game');
     expect(result.media.userData.rating, 90);
-    expect(result.gameMetadata.availableModes, [GameMode.singlePlayer]);
+    expect(result.gameMetadata.developers, isEmpty);
+    expect(result.gameMetadata.publishers, isEmpty);
     expect(result.gameUserData.playedModes, [GameMode.singlePlayer]);
     expect(result.gameUserData.playedPlatforms, [GamePlatform.pc]);
   });
@@ -219,9 +199,7 @@ void main() {
     final original = await repository.create(
       metadata: const MediaMetadata(title: 'Original Title'),
       userData: const MediaUserData(status: MediaStatus.planned),
-      gameMetadata: const GameMetadata(
-        availableModes: [GameMode.singlePlayer],
-      ),
+      gameMetadata: const GameMetadata(),
       gameUserData: const GameUserData(),
     );
 
@@ -229,6 +207,22 @@ void main() {
     await database.select(database.media).getSingle();
 
     await Future<void>.delayed(const Duration(milliseconds: 2));
+
+    // Create a person and company first
+    final personId = await database.into(database.people).insert(
+      PeopleCompanion.insert(name: 'Test Developer'),
+    );
+    final companyId = await database.into(database.companies).insert(
+      CompaniesCompanion.insert(name: 'Test Publisher'),
+    );
+
+    // Create contributors
+    final developerContributorId = await database.into(database.contributors).insert(
+      ContributorsCompanion.insert(personId: Value(personId)),
+    );
+    final publisherContributorId = await database.into(database.contributors).insert(
+      ContributorsCompanion.insert(companyId: Value(companyId)),
+    );
 
     final updated = original.copyWith(
       media: original.media.copyWith(
@@ -238,7 +232,12 @@ void main() {
         ),
       ),
       gameMetadata: original.gameMetadata.copyWith(
-        availableModes: [GameMode.singlePlayer, GameMode.multiplayer],
+        developers: [
+          domain.Contributor(id: developerContributorId, personId: personId),
+        ],
+        publishers: [
+          domain.Contributor(id: publisherContributorId, companyId: companyId),
+        ],
       ),
       gameUserData: original.gameUserData.copyWith(
         playedModes: [GameMode.singlePlayer],
@@ -253,27 +252,21 @@ void main() {
 
     expect(result.media.metadata.title, 'Updated Title');
     expect(result.media.userData.status, MediaStatus.completed);
-    expect(result.gameMetadata.availableModes, [
-      GameMode.singlePlayer,
-      GameMode.multiplayer,
-    ]);
+    expect(result.gameMetadata.developers, hasLength(1));
+    expect(result.gameMetadata.developers.first.id, developerContributorId);
+    expect(result.gameMetadata.publishers, hasLength(1));
+    expect(result.gameMetadata.publishers.first.id, publisherContributorId);
     expect(result.gameUserData.playedModes, [GameMode.singlePlayer]);
     expect(result.gameUserData.playedPlatforms, [GamePlatform.pc]);
 
     expect(updatedMediaRow.createdAt, originalMediaRow.createdAt);
-
-    final storedModes =
-    await database.select(database.gameAvailableModes).get();
-    expect(storedModes, hasLength(2));
   });
 
   test('delete removes the complete game aggregate', () async {
     final game = await repository.create(
       metadata: const MediaMetadata(title: 'Test Game'),
       userData: const MediaUserData(status: MediaStatus.planned),
-      gameMetadata: const GameMetadata(
-        availableModes: [GameMode.singlePlayer],
-      ),
+      gameMetadata: const GameMetadata(),
       gameUserData: const GameUserData(
         playedModes: [GameMode.singlePlayer],
         playedPlatforms: [GamePlatform.pc],
@@ -284,7 +277,6 @@ void main() {
 
     expect(await database.select(database.media).get(), isEmpty);
     expect(await database.select(database.games).get(), isEmpty);
-    expect(await database.select(database.gameAvailableModes).get(), isEmpty);
     expect(await database.select(database.gamePlayedModes).get(), isEmpty);
     expect(
       await database.select(database.gamePlayedPlatforms).get(),
