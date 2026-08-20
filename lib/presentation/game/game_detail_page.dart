@@ -707,66 +707,68 @@ class _EditRatingSheetState extends State<_EditRatingSheet> {
         right: 16,
         top: 16,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Edit Rating',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _ratingController,
-            decoration: const InputDecoration(
-              labelText: 'Rating (0-100)',
-              border: OutlineInputBorder(),
-              helperText: 'Leave empty for no rating',
-            ),
-            keyboardType: TextInputType.number,
-            onChanged: (value) {
-              setState(() {
-                _rating = value.isEmpty ? null : int.tryParse(value);
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _save,
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : const Text('Save'),
-                ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Edit Rating',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _ratingController,
+              decoration: const InputDecoration(
+                labelText: 'Rating (0-100)',
+                border: OutlineInputBorder(),
+                helperText: 'Leave empty for no rating',
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                setState(() {
+                  _rating = value.isEmpty ? null : int.tryParse(value);
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _save,
+                    child: _isLoading
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Text('Save'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -854,66 +856,68 @@ class _EditReviewSheetState extends State<_EditReviewSheet> {
         right: 16,
         top: 16,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Edit Review',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _reviewController,
-            decoration: const InputDecoration(
-              labelText: 'Review',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
-            ),
-            maxLines: 6,
-            onChanged: (value) {
-              setState(() {
-                _review = value.isEmpty ? null : value;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _save,
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : const Text('Save'),
-                ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Edit Review',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _reviewController,
+              decoration: const InputDecoration(
+                labelText: 'Review',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
+              maxLines: 6,
+              onChanged: (value) {
+                setState(() {
+                  _review = value.isEmpty ? null : value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _save,
+                    child: _isLoading
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Text('Save'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -1006,150 +1010,152 @@ class _EditUserDataSheetState extends State<_EditUserDataSheet> {
         right: 16,
         top: 16,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Edit Your Data',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<MediaStatus>(
-            initialValue: _status,
-            decoration: const InputDecoration(
-              labelText: 'Status',
-              border: OutlineInputBorder(),
+            const SizedBox(height: 16),
+            Text(
+              'Edit Your Data',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-            items: MediaStatus.values.map((status) {
-              return DropdownMenuItem(
-                value: status,
-                child: Text(StatusUtils.getLabel(status)),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) setState(() => _status = value);
-            },
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () => _selectDate(
-                    initialDate: _startedOn,
-                    onSelected: (date) => setState(() => _startedOn = date),
-                  ),
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Started On',
-                      border: OutlineInputBorder(),
-                    ),
-                    child: Text(_startedOn?.toString() ?? 'Not set'),
-                  ),
-                ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<MediaStatus>(
+              initialValue: _status,
+              decoration: const InputDecoration(
+                labelText: 'Status',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(width: 12),
-              if (_startedOn != null)
-                IconButton(
-                  onPressed: () => setState(() => _startedOn = null),
-                  icon: const Icon(Icons.clear, size: 20),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () => _selectDate(
-                    initialDate: _finishedOn,
-                    onSelected: (date) => setState(() => _finishedOn = date),
-                  ),
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Finished On',
-                      border: OutlineInputBorder(),
-                    ),
-                    child: Text(_finishedOn?.toString() ?? 'Not set'),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              if (_finishedOn != null)
-                IconButton(
-                  onPressed: () => setState(() => _finishedOn = null),
-                  icon: const Icon(Icons.clear, size: 20),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _tagController,
-            decoration: InputDecoration(
-              labelText: 'Add Tag',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _addTag,
-              ),
-            ),
-            onFieldSubmitted: (_) => _addTag(),
-          ),
-          if (_tags.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _tags.map((tag) {
-                return Chip(
-                  label: Text(tag.name),
-                  onDeleted: () {
-                    setState(() {
-                      _tags.remove(tag);
-                    });
-                  },
+              items: MediaStatus.values.map((status) {
+                return DropdownMenuItem(
+                  value: status,
+                  child: Text(StatusUtils.getLabel(status)),
                 );
               }).toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _status = value);
+              },
             ),
-          ],
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _selectDate(
+                      initialDate: _startedOn,
+                      onSelected: (date) => setState(() => _startedOn = date),
+                    ),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Started On',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(_startedOn?.toString() ?? 'Not set'),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                if (_startedOn != null)
+                  IconButton(
+                    onPressed: () => setState(() => _startedOn = null),
+                    icon: const Icon(Icons.clear, size: 20),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _selectDate(
+                      initialDate: _finishedOn,
+                      onSelected: (date) => setState(() => _finishedOn = date),
+                    ),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Finished On',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(_finishedOn?.toString() ?? 'Not set'),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                if (_finishedOn != null)
+                  IconButton(
+                    onPressed: () => setState(() => _finishedOn = null),
+                    icon: const Icon(Icons.clear, size: 20),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _tagController,
+              decoration: InputDecoration(
+                labelText: 'Add Tag',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: _addTag,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _save,
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : const Text('Save'),
-                ),
+              onFieldSubmitted: (_) => _addTag(),
+            ),
+            if (_tags.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _tags.map((tag) {
+                  return Chip(
+                    label: Text(tag.name),
+                    onDeleted: () {
+                      setState(() {
+                        _tags.remove(tag);
+                      });
+                    },
+                  );
+                }).toList(),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-        ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _save,
+                    child: _isLoading
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Text('Save'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -1295,144 +1301,146 @@ class _EditMediaMetadataSheetState extends State<_EditMediaMetadataSheet> {
         right: 16,
         top: 16,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Edit Media Metadata',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-
-          // Title
-          TextFormField(
-            controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'Title *',
-              border: OutlineInputBorder(),
+            const SizedBox(height: 16),
+            Text(
+              'Edit Media Metadata',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-            onChanged: (value) => _title = value,
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
-          // Description
-          TextFormField(
-            controller: _descriptionController,
-            decoration: const InputDecoration(
-              labelText: 'Description',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
+            // Title
+            TextFormField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Title *',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) => _title = value,
             ),
-            maxLines: 3,
-            onChanged: (value) => _description = value.isEmpty ? null : value,
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Cover URL
-          TextFormField(
-            controller: _coverUrlController,
-            decoration: const InputDecoration(
-              labelText: 'Cover URL',
-              border: OutlineInputBorder(),
-              helperText: 'Paste a direct image URL',
+            // Description
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+              maxLines: 3,
+              onChanged: (value) => _description = value.isEmpty ? null : value,
             ),
-            keyboardType: TextInputType.url,
-            onChanged: (value) => _coverUrl = value.isEmpty ? null : value,
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Release Date
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: _selectReleaseDate,
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Release Date',
-                      border: OutlineInputBorder(),
+            // Cover URL
+            TextFormField(
+              controller: _coverUrlController,
+              decoration: const InputDecoration(
+                labelText: 'Cover URL',
+                border: OutlineInputBorder(),
+                helperText: 'Paste a direct image URL',
+              ),
+              keyboardType: TextInputType.url,
+              onChanged: (value) => _coverUrl = value.isEmpty ? null : value,
+            ),
+            const SizedBox(height: 12),
+
+            // Release Date
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: _selectReleaseDate,
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Release Date',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(_releaseDate?.toString() ?? 'Not set'),
                     ),
-                    child: Text(_releaseDate?.toString() ?? 'Not set'),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              if (_releaseDate != null)
-                IconButton(
-                  onPressed: () => setState(() => _releaseDate = null),
-                  icon: const Icon(Icons.clear, size: 20),
+                const SizedBox(width: 12),
+                if (_releaseDate != null)
+                  IconButton(
+                    onPressed: () => setState(() => _releaseDate = null),
+                    icon: const Icon(Icons.clear, size: 20),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Genres
+            _buildTagInput(
+              label: 'Genres',
+              controller: _genreController,
+              items: _genres.map((g) => g.name).toList(),
+              onAdd: () => _addGenre(_genreController.text.trim()),
+              onRemove: (index) => setState(() => _genres.removeAt(index)),
+            ),
+            const SizedBox(height: 12),
+
+            // Themes
+            _buildTagInput(
+              label: 'Themes',
+              controller: _themeController,
+              items: _themes.map((t) => t.name).toList(),
+              onAdd: () => _addTheme(_themeController.text.trim()),
+              onRemove: (index) => setState(() => _themes.removeAt(index)),
+            ),
+            const SizedBox(height: 12),
+
+            // Series
+            _buildTagInput(
+              label: 'Series',
+              controller: _seriesController,
+              items: _series.map((s) => s.name).toList(),
+              onAdd: () => _addSeries(_seriesController.text.trim()),
+              onRemove: (index) => setState(() => _series.removeAt(index)),
+            ),
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Genres
-          _buildTagInput(
-            label: 'Genres',
-            controller: _genreController,
-            items: _genres.map((g) => g.name).toList(),
-            onAdd: () => _addGenre(_genreController.text.trim()),
-            onRemove: (index) => setState(() => _genres.removeAt(index)),
-          ),
-          const SizedBox(height: 12),
-
-          // Themes
-          _buildTagInput(
-            label: 'Themes',
-            controller: _themeController,
-            items: _themes.map((t) => t.name).toList(),
-            onAdd: () => _addTheme(_themeController.text.trim()),
-            onRemove: (index) => setState(() => _themes.removeAt(index)),
-          ),
-          const SizedBox(height: 12),
-
-          // Series
-          _buildTagInput(
-            label: 'Series',
-            controller: _seriesController,
-            items: _series.map((s) => s.name).toList(),
-            onAdd: () => _addSeries(_seriesController.text.trim()),
-            onRemove: (index) => setState(() => _series.removeAt(index)),
-          ),
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _save,
+                    child: _isLoading
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Text('Save'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _save,
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : const Text('Save'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -1644,72 +1652,74 @@ class _EditGameMetadataSheetState extends State<_EditGameMetadataSheet> {
         right: 16,
         top: 16,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Edit Game Metadata',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+            Text(
+              'Edit Game Metadata',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
 
-          // Developers
-          _buildTagInput(
-            label: 'Developers',
-            controller: _developerController,
-            items: _developerNames,
-            onAdd: () => _addDeveloper(_developerController.text.trim()),
-            onRemove: (index) => setState(() => _developerNames.removeAt(index)),
-          ),
-          const SizedBox(height: 12),
+            // Developers
+            _buildTagInput(
+              label: 'Developers',
+              controller: _developerController,
+              items: _developerNames,
+              onAdd: () => _addDeveloper(_developerController.text.trim()),
+              onRemove: (index) => setState(() => _developerNames.removeAt(index)),
+            ),
+            const SizedBox(height: 12),
 
-          // Publishers
-          _buildTagInput(
-            label: 'Publishers',
-            controller: _publisherController,
-            items: _publisherNames,
-            onAdd: () => _addPublisher(_publisherController.text.trim()),
-            onRemove: (index) => setState(() => _publisherNames.removeAt(index)),
-          ),
-          const SizedBox(height: 16),
+            // Publishers
+            _buildTagInput(
+              label: 'Publishers',
+              controller: _publisherController,
+              items: _publisherNames,
+              onAdd: () => _addPublisher(_publisherController.text.trim()),
+              onRemove: (index) => setState(() => _publisherNames.removeAt(index)),
+            ),
+            const SizedBox(height: 16),
 
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _save,
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : const Text('Save'),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _save,
+                    child: _isLoading
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Text('Save'),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -1842,101 +1852,103 @@ class _EditGameUserDataSheetState extends State<_EditGameUserDataSheet> {
         right: 16,
         top: 16,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Edit Your Game Data',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Played Modes',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: GameMode.values.map((mode) {
-              final isSelected = _playedModes.contains(mode);
-              return FilterChip(
-                label: Text(_gameModeLabel(mode)),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      _playedModes.add(mode);
-                    } else {
-                      _playedModes.remove(mode);
-                    }
-                  });
-                },
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Played On',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: GamePlatform.values.map((platform) {
-              final isSelected = _playedPlatforms.contains(platform);
-              return FilterChip(
-                label: Text(_gamePlatformLabel(platform)),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      _playedPlatforms.add(platform);
-                    } else {
-                      _playedPlatforms.remove(platform);
-                    }
-                  });
-                },
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+            const SizedBox(height: 16),
+            Text(
+              'Edit Your Game Data',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Played Modes',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: GameMode.values.map((mode) {
+                final isSelected = _playedModes.contains(mode);
+                return FilterChip(
+                  label: Text(_gameModeLabel(mode)),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _playedModes.add(mode);
+                      } else {
+                        _playedModes.remove(mode);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Played On',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: GamePlatform.values.map((platform) {
+                final isSelected = _playedPlatforms.contains(platform);
+                return FilterChip(
+                  label: Text(_gamePlatformLabel(platform)),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _playedPlatforms.add(platform);
+                      } else {
+                        _playedPlatforms.remove(platform);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _save,
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : const Text('Save'),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _save,
+                    child: _isLoading
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Text('Save'),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
