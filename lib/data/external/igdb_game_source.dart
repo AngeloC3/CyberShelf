@@ -223,10 +223,6 @@ class IgdbGameSource implements ExternalGameSource {
         return GameMode.cooperative;
       case 'competitive':
         return GameMode.competitive;
-      case 'local multiplayer':
-        return GameMode.localMultiplayer;
-      case 'online multiplayer':
-        return GameMode.onlineMultiplayer;
       default:
         return null;
     }

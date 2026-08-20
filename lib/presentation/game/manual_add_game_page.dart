@@ -395,9 +395,7 @@ class _ManualAddGamePageState extends State<ManualAddGamePage> {
       GameMode.singlePlayer => 'Single Player',
       GameMode.multiplayer => 'Multiplayer',
       GameMode.cooperative => 'Co-op',
-      GameMode.competitive => 'Competitive',
-      GameMode.localMultiplayer => 'Local MP',
-      GameMode.onlineMultiplayer => 'Online MP',
+      GameMode.competitive => 'Competitive'
     };
   }
 
