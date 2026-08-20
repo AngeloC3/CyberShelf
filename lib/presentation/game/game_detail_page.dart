@@ -288,8 +288,7 @@ class _GameDetailPageState extends State<GameDetailPage> {
               ],
             ),
             const SizedBox(height: 12),
-            if (game.media.metadata.coverUrl != null)
-              _buildInfoRow('Cover URL', game.media.metadata.coverUrl!),
+            // COVER URL REMOVED - this line is gone
             if (game.media.metadata.releaseDate != null)
               _buildInfoRow('Release Date', game.media.metadata.releaseDate.toString()),
             if (game.media.metadata.genres.isNotEmpty)
