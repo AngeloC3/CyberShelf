@@ -3,7 +3,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:cybershelf/application/game/game_service.dart';
 import 'package:cybershelf/data/database/app_database.dart';
 import 'package:cybershelf/data/database/database_provider.dart';
+import 'package:cybershelf/data/external/igdb_game_source.dart';
 import 'package:cybershelf/data/repositories/drift_game_repository.dart';
+import 'package:cybershelf/domain/game/external_game_source.dart';
 import 'package:cybershelf/presentation/game/games_page.dart';
 import 'package:cybershelf/presentation/theme/app_theme.dart';
 
@@ -21,12 +23,16 @@ Future<void> main() async {
   final igdbClientId = dotenv.env['IGDB_CLIENT_ID'] ?? '';
   final igdbClientSecret = dotenv.env['IGDB_CLIENT_SECRET'] ?? '';
 
+  final igdbSource = IgdbGameSource(
+    clientId: igdbClientId,
+    clientSecret: igdbClientSecret,
+  );
+
   runApp(
     CyberShelfApp(
       database: database,
       gameService: gameService,
-      igdbClientId: igdbClientId,
-      igdbClientSecret: igdbClientSecret,
+      igdbSource: igdbSource,
     ),
   );
 }
@@ -36,14 +42,12 @@ class CyberShelfApp extends StatelessWidget {
     super.key,
     required this.database,
     required this.gameService,
-    required this.igdbClientId,
-    required this.igdbClientSecret,
+    required this.igdbSource,
   });
 
   final AppDatabase database;
   final GameService gameService;
-  final String igdbClientId;
-  final String igdbClientSecret;
+  final ExternalGameSource igdbSource;
 
   @override
   Widget build(BuildContext context) {
@@ -53,8 +57,7 @@ class CyberShelfApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: GamesPage(
         gameService: gameService,
-        igdbClientId: igdbClientId,
-        igdbClientSecret: igdbClientSecret,
+        externalSource: igdbSource,
       ),
     );
   }

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:cybershelf/application/game/game_service.dart';
-import 'package:cybershelf/data/external/igdb_game_source.dart';
+import 'package:cybershelf/domain/game/external_game_source.dart';
 import 'package:cybershelf/domain/game/game_item.dart';
 import 'package:cybershelf/presentation/game/external_add_game_page.dart';
 import 'package:cybershelf/presentation/game/manual_add_game_page.dart';
 import 'package:cybershelf/presentation/game/game_detail_page.dart';
 import 'package:cybershelf/presentation/shared/rating_utils.dart';
 import 'package:cybershelf/presentation/shared/status_utils.dart';
+import 'package:cybershelf/presentation/filter/filter_models.dart';
+import 'package:cybershelf/presentation/filter/filter_page.dart';
+import 'package:cybershelf/presentation/filter/game_filter_config.dart';
 
 enum SortOption {
   titleAsc,
@@ -19,25 +22,26 @@ class GamesPage extends StatefulWidget {
   const GamesPage({
     super.key,
     required this.gameService,
-    required this.igdbClientId,
-    required this.igdbClientSecret,
+    required this.externalSource,
   });
 
   final GameService gameService;
-  final String igdbClientId;
-  final String igdbClientSecret;
+  final ExternalGameSource externalSource;
 
   @override
   State<GamesPage> createState() => _GamesPageState();
 }
 
 class _GamesPageState extends State<GamesPage> {
-  late Future<List<GameItem>> _gamesFuture;
   List<GameItem> _allGames = [];
-  List<GameItem> _filteredGames = [];
+  List<GameItem> _displayedGames = [];
+  bool _isLoading = true;
+  String? _error;
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   SortOption _sortOption = SortOption.titleAsc;
+  FilterState _filterState = const FilterState();
+  final GameFilterEvaluator _filterEvaluator = const GameFilterEvaluator();
 
   @override
   void initState() {
@@ -53,25 +57,78 @@ class _GamesPageState extends State<GamesPage> {
     super.dispose();
   }
 
-  void _loadGames() {
-    _gamesFuture = widget.gameService.getAll().then((games) {
-      _allGames = games;
-      _filteredGames = games;
-      return games;
+  Future<void> _loadGames() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
     });
+
+    try {
+      final games = await widget.gameService.getAll();
+      setState(() {
+        _allGames = games;
+        _displayedGames = games;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase().trim();
     setState(() {
       _isSearching = query.isNotEmpty;
-      if (query.isEmpty) {
-        _filteredGames = _allGames;
-      } else {
-        _filteredGames = _allGames.where((game) {
-          return game.media.metadata.title.toLowerCase().contains(query);
-        }).toList();
-      }
+      _applyFiltersAndSearch();
+    });
+  }
+
+  void _applyFiltersAndSearch() {
+    final query = _searchController.text.toLowerCase().trim();
+    var games = _allGames;
+
+    // Apply filters
+    if (_filterState.hasActiveFilters) {
+      games = games.where((game) {
+        for (final group in _filterState.groups) {
+          if (group.conditions.isEmpty) continue;
+
+          bool groupMatches = group.isAnd;
+
+          for (final condition in group.conditions) {
+            bool conditionMatches = _filterEvaluator.evaluate(game, condition);
+
+            if (group.isAnd) {
+              groupMatches = groupMatches && conditionMatches;
+            } else {
+              groupMatches = groupMatches || conditionMatches;
+            }
+
+            if (group.isAnd && !groupMatches) break;
+            if (!group.isAnd && groupMatches) break;
+          }
+
+          if (groupMatches) return true;
+        }
+        return false;
+      }).toList();
+    }
+
+    // Apply search
+    if (query.isNotEmpty) {
+      games = games.where((game) {
+        return game.media.metadata.title.toLowerCase().contains(query);
+      }).toList();
+    }
+
+    // Apply sort
+    games = _getSortedGames(games);
+
+    setState(() {
+      _displayedGames = games;
     });
   }
 
@@ -99,16 +156,31 @@ class _GamesPageState extends State<GamesPage> {
   }
 
   Future<void> _refresh() async {
-    setState(() {
-      _loadGames();
-    });
-    await _gamesFuture;
-    // Reset search when refreshing
     _searchController.clear();
     setState(() {
-      _filteredGames = _allGames;
+      _filterState = const FilterState();
       _isSearching = false;
     });
+    await _loadGames();
+  }
+
+  void _openFilter() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FilterPage<GameItem>(
+          initialFilterState: _filterState,
+          availableFields: _filterEvaluator.availableFields,
+          getSelectOptions: _filterEvaluator.getSelectOptions,
+          onApply: (newFilterState) {
+            setState(() {
+              _filterState = newFilterState;
+              _applyFiltersAndSearch();
+            });
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -135,11 +207,32 @@ class _GamesPageState extends State<GamesPage> {
                 _searchController.clear();
                 setState(() {
                   _isSearching = false;
-                  _filteredGames = _allGames;
+                  _applyFiltersAndSearch();
                 });
               },
             )
           else ...[
+            IconButton(
+              icon: Stack(
+                children: [
+                  const Icon(Icons.filter_list),
+                  if (_filterState.hasActiveFilters)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              onPressed: _openFilter,
+            ),
             IconButton(
               icon: const Icon(Icons.sort),
               onPressed: _showSortOptions,
@@ -155,126 +248,122 @@ class _GamesPageState extends State<GamesPage> {
           ],
         ],
       ),
-      body: FutureBuilder<List<GameItem>>(
-        key: ValueKey(_gamesFuture),
-        future: _gamesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Failed to load games.',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      snapshot.error.toString(),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: _refresh,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final games = _getSortedGames(_isSearching ? _filteredGames : _allGames);
-
-          if (games.isEmpty && _isSearching) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.search_off,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No games match your search',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Try a different search term',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (games.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.videogame_asset,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No games yet.',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap the + button to add one',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: games.length,
-              itemBuilder: (context, index) {
-                return _GameListTile(
-                  game: games[index],
-                  gameService: widget.gameService,
-                  onGameChanged: _refresh,
-                );
-              },
-            ),
-          );
-        },
-      ),
+      body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddOptions,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Failed to load games.',
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _refresh,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final games = _displayedGames;
+
+    if (games.isEmpty && _isSearching) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No games match your search',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try a different search term',
+              style: TextStyle(
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (games.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.videogame_asset,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No games yet.',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tap the + button to add one',
+              style: TextStyle(
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: games.length,
+        itemBuilder: (context, index) {
+          return _GameListTile(
+            game: games[index],
+            gameService: widget.gameService,
+            onGameChanged: _refresh,
+          );
+        },
       ),
     );
   }
@@ -291,7 +380,7 @@ class _GamesPageState extends State<GamesPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.search),
-              title: const Text('Search IGDB'),
+              title: const Text('Search External Source'),
               onTap: () {
                 Navigator.pop(context);
                 _navigateToAddGame();
@@ -312,30 +401,12 @@ class _GamesPageState extends State<GamesPage> {
   }
 
   void _navigateToAddGame() {
-    if (widget.igdbClientId.isEmpty || widget.igdbClientSecret.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'IGDB credentials not configured. '
-                'Set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET environment variables.',
-          ),
-          duration: Duration(seconds: 5),
-        ),
-      );
-      return;
-    }
-
-    final externalSource = IgdbGameSource(
-      clientId: widget.igdbClientId,
-      clientSecret: widget.igdbClientSecret,
-    );
-
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ExternalAddGamePage(
           gameService: widget.gameService,
-          externalSource: externalSource,
+          externalSource: widget.externalSource,
           onGameAdded: _refresh,
         ),
       ),
@@ -371,7 +442,10 @@ class _GamesPageState extends State<GamesPage> {
                   ? const Icon(Icons.check)
                   : null,
               onTap: () {
-                setState(() => _sortOption = SortOption.titleAsc);
+                setState(() {
+                  _sortOption = SortOption.titleAsc;
+                  _applyFiltersAndSearch();
+                });
                 Navigator.pop(context);
               },
             ),
@@ -382,7 +456,10 @@ class _GamesPageState extends State<GamesPage> {
                   ? const Icon(Icons.check)
                   : null,
               onTap: () {
-                setState(() => _sortOption = SortOption.titleDesc);
+                setState(() {
+                  _sortOption = SortOption.titleDesc;
+                  _applyFiltersAndSearch();
+                });
                 Navigator.pop(context);
               },
             ),
@@ -394,7 +471,10 @@ class _GamesPageState extends State<GamesPage> {
                   ? const Icon(Icons.check)
                   : null,
               onTap: () {
-                setState(() => _sortOption = SortOption.ratingAsc);
+                setState(() {
+                  _sortOption = SortOption.ratingAsc;
+                  _applyFiltersAndSearch();
+                });
                 Navigator.pop(context);
               },
             ),
@@ -405,7 +485,10 @@ class _GamesPageState extends State<GamesPage> {
                   ? const Icon(Icons.check)
                   : null,
               onTap: () {
-                setState(() => _sortOption = SortOption.ratingDesc);
+                setState(() {
+                  _sortOption = SortOption.ratingDesc;
+                  _applyFiltersAndSearch();
+                });
                 Navigator.pop(context);
               },
             ),
