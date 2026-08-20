@@ -629,4 +629,170 @@ class GameService {
     return update(updatedGame);
   }
 
+  Future<GameItem> updateMediaMetadata(int gameId, MediaMetadata newMetadata) async {
+    final game = await getById(gameId);
+    if (game == null) {
+      throw StateError('Game with ID $gameId not found');
+    }
+
+    // Resolve genres
+    final resolvedGenres = <domain.Genre>[];
+    for (final genre in newMetadata.genres) {
+      final resolved = await _resolveGenre(genre);
+      if (resolved != null) {
+        resolvedGenres.add(resolved);
+      }
+    }
+
+    // Resolve themes
+    final resolvedThemes = <domain.Theme>[];
+    for (final theme in newMetadata.themes) {
+      final resolved = await _resolveTheme(theme);
+      if (resolved != null) {
+        resolvedThemes.add(resolved);
+      }
+    }
+
+    // Resolve series
+    final resolvedSeries = <domain.Series>[];
+    for (final series in newMetadata.series) {
+      final resolved = await _resolveSeries(series);
+      if (resolved != null) {
+        resolvedSeries.add(resolved);
+      }
+    }
+
+    final updatedMetadata = newMetadata.copyWith(
+      genres: resolvedGenres,
+      themes: resolvedThemes,
+      series: resolvedSeries,
+    );
+
+    final updatedMedia = game.media.copyWith(
+      metadata: updatedMetadata,
+    );
+
+    final updatedGame = game.copyWith(
+      media: updatedMedia,
+    );
+
+    return update(updatedGame);
+  }
+
+  Future<GameItem> updateGameMetadata(int gameId, GameMetadata newGameMetadata) async {
+    final game = await getById(gameId);
+    if (game == null) {
+      throw StateError('Game with ID $gameId not found');
+    }
+
+    // Resolve developers and publishers
+    final resolvedGameMetadata = await _resolveDevelopersAndPublishers(
+      newGameMetadata,
+    );
+
+    final updatedGame = game.copyWith(
+      gameMetadata: resolvedGameMetadata,
+    );
+
+    return update(updatedGame);
+  }
+
+  Future<GameItem> updateGameMetadataFromNames(
+      int gameId,
+      List<String> developerNames,
+      List<String> publisherNames,
+      ) async {
+    final game = await getById(gameId);
+    if (game == null) {
+      throw StateError('Game with ID $gameId not found');
+    }
+
+    final resolvedMetadata = await _resolveDeveloperAndPublisherNames(
+      const GameMetadata(),
+      developerNames,
+      publisherNames,
+    );
+
+    final updatedGame = game.copyWith(
+      gameMetadata: resolvedMetadata,
+    );
+
+    return update(updatedGame);
+  }
+
+// Helper method to resolve a single genre
+  Future<domain.Genre?> _resolveGenre(domain.Genre genre) async {
+    if (genre.id > 0) {
+      final existing = await (_database.select(_database.genres)
+        ..where((g) => g.id.equals(genre.id)))
+          .getSingleOrNull();
+      if (existing != null) {
+        return domain.Genre(id: existing.id, name: existing.name);
+      }
+    }
+
+    final existing = await (_database.select(_database.genres)
+      ..where((g) => g.name.equals(genre.name)))
+        .getSingleOrNull();
+
+    if (existing != null) {
+      return domain.Genre(id: existing.id, name: existing.name);
+    }
+
+    final newId = await _database.into(_database.genres).insert(
+      GenresCompanion.insert(name: genre.name),
+    );
+    return domain.Genre(id: newId, name: genre.name);
+  }
+
+// Helper method to resolve a single theme
+  Future<domain.Theme?> _resolveTheme(domain.Theme theme) async {
+    if (theme.id > 0) {
+      final existing = await (_database.select(_database.themes)
+        ..where((t) => t.id.equals(theme.id)))
+          .getSingleOrNull();
+      if (existing != null) {
+        return domain.Theme(id: existing.id, name: existing.name);
+      }
+    }
+
+    final existing = await (_database.select(_database.themes)
+      ..where((t) => t.name.equals(theme.name)))
+        .getSingleOrNull();
+
+    if (existing != null) {
+      return domain.Theme(id: existing.id, name: existing.name);
+    }
+
+    final newId = await _database.into(_database.themes).insert(
+      ThemesCompanion.insert(name: theme.name),
+    );
+    return domain.Theme(id: newId, name: theme.name);
+  }
+
+// Helper method to resolve a single series
+  Future<domain.Series?> _resolveSeries(domain.Series series) async {
+    if (series.id > 0) {
+      final existing = await (_database.select(_database.series)
+        ..where((s) => s.id.equals(series.id)))
+          .getSingleOrNull();
+      if (existing != null) {
+        return domain.Series(id: existing.id, name: existing.name);
+      }
+    }
+
+    final existing = await (_database.select(_database.series)
+      ..where((s) => s.name.equals(series.name)))
+        .getSingleOrNull();
+
+    if (existing != null) {
+      return domain.Series(id: existing.id, name: existing.name);
+    }
+
+    final newId = await _database.into(_database.series).insert(
+      SeriesCompanion.insert(name: series.name),
+    );
+    return domain.Series(id: newId, name: series.name);
+  }
+
 }

@@ -1,3 +1,4 @@
+// lib/presentation/game/game_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:cybershelf/application/game/game_service.dart';
 import 'package:cybershelf/domain/date_only.dart';
@@ -7,6 +8,10 @@ import 'package:cybershelf/domain/game/game_platform.dart';
 import 'package:cybershelf/domain/media/tag.dart';
 import 'package:cybershelf/domain/media_status.dart';
 import 'package:cybershelf/domain/media/contributor.dart' as domain;
+import 'package:cybershelf/domain/media/media_metadata.dart';
+import 'package:cybershelf/domain/media/genre.dart' as domain_genre;
+import 'package:cybershelf/domain/media/theme.dart' as domain_theme;
+import 'package:cybershelf/domain/media/series.dart' as domain_series;
 import 'package:cybershelf/presentation/shared/rating_utils.dart';
 import 'package:cybershelf/presentation/shared/status_utils.dart';
 
@@ -178,6 +183,15 @@ class _GameDetailPageState extends State<GameDetailPage> {
               ],
               const SizedBox(height: 8),
               StatusUtils.buildChip(game.media.userData.status),
+              if (game.media.metadata.description != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  game.media.metadata.description!,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -203,7 +217,7 @@ class _GameDetailPageState extends State<GameDetailPage> {
             ),
             IconButton(
               icon: const Icon(Icons.edit, size: 20),
-              onPressed: () => _showEditUserDataDialog(game),
+              onPressed: () => _showEditRatingDialog(game),
             ),
           ],
         ),
@@ -229,7 +243,7 @@ class _GameDetailPageState extends State<GameDetailPage> {
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.edit, size: 20),
-                  onPressed: () => _showEditUserDataDialog(game),
+                  onPressed: () => _showEditReviewDialog(game),
                 ),
               ],
             ),
@@ -260,14 +274,24 @@ class _GameDetailPageState extends State<GameDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Media Metadata',
-              style: Theme.of(context).textTheme.titleMedium,
+            Row(
+              children: [
+                Text(
+                  'Media Metadata',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  onPressed: () => _showEditMediaMetadataDialog(game),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
-            _buildInfoRow('Title', game.media.metadata.title),
-            if (game.media.metadata.description != null)
-              _buildInfoRow('Description', game.media.metadata.description!),
+            if (game.media.metadata.coverUrl != null)
+              _buildInfoRow('Cover URL', game.media.metadata.coverUrl!),
+            if (game.media.metadata.releaseDate != null)
+              _buildInfoRow('Release Date', game.media.metadata.releaseDate.toString()),
             if (game.media.metadata.genres.isNotEmpty)
               _buildInfoRow(
                 'Genres',
@@ -510,6 +534,40 @@ class _GameDetailPageState extends State<GameDetailPage> {
     };
   }
 
+  // ============================================================
+  // Dialog Methods
+  // ============================================================
+
+  void _showEditRatingDialog(GameItem game) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => _EditRatingSheet(
+        game: game,
+        gameService: widget.gameService,
+        onSaved: _onDataChanged,
+      ),
+    );
+  }
+
+  void _showEditReviewDialog(GameItem game) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => _EditReviewSheet(
+        game: game,
+        gameService: widget.gameService,
+        onSaved: _onDataChanged,
+      ),
+    );
+  }
+
   void _showEditUserDataDialog(GameItem game) {
     showModalBottomSheet(
       context: context,
@@ -518,6 +576,21 @@ class _GameDetailPageState extends State<GameDetailPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) => _EditUserDataSheet(
+        game: game,
+        gameService: widget.gameService,
+        onSaved: _onDataChanged,
+      ),
+    );
+  }
+
+  void _showEditMediaMetadataDialog(GameItem game) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => _EditMediaMetadataSheet(
         game: game,
         gameService: widget.gameService,
         onSaved: _onDataChanged,
@@ -587,7 +660,303 @@ class _GameDetailPageState extends State<GameDetailPage> {
   }
 }
 
-// ==================== Edit User Data Sheet ====================
+// ============================================================
+// Edit Rating Sheet
+// ============================================================
+
+class _EditRatingSheet extends StatefulWidget {
+  const _EditRatingSheet({
+    required this.game,
+    required this.gameService,
+    required this.onSaved,
+  });
+
+  final GameItem game;
+  final GameService gameService;
+  final VoidCallback onSaved;
+
+  @override
+  State<_EditRatingSheet> createState() => _EditRatingSheetState();
+}
+
+class _EditRatingSheetState extends State<_EditRatingSheet> {
+  late int? _rating;
+  late bool _isLoading;
+  final _ratingController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _rating = widget.game.media.userData.rating;
+    _isLoading = false;
+    _ratingController.text = _rating?.toString() ?? '';
+  }
+
+  @override
+  void dispose() {
+    _ratingController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 16,
+        right: 16,
+        top: 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Edit Rating',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _ratingController,
+            decoration: const InputDecoration(
+              labelText: 'Rating (0-100)',
+              border: OutlineInputBorder(),
+              helperText: 'Leave empty for no rating',
+            ),
+            keyboardType: TextInputType.number,
+            onChanged: (value) {
+              setState(() {
+                _rating = value.isEmpty ? null : int.tryParse(value);
+              });
+            },
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _isLoading ? null : _save,
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final updatedUserData = widget.game.media.userData.copyWith(
+        rating: _rating,
+      );
+
+      final updatedMedia = widget.game.media.copyWith(
+        userData: updatedUserData,
+      );
+
+      final updatedGame = widget.game.copyWith(
+        media: updatedMedia,
+      );
+
+      await widget.gameService.update(updatedGame);
+
+      if (mounted) {
+        widget.onSaved();
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rating updated!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+}
+
+// ============================================================
+// Edit Review Sheet
+// ============================================================
+
+class _EditReviewSheet extends StatefulWidget {
+  const _EditReviewSheet({
+    required this.game,
+    required this.gameService,
+    required this.onSaved,
+  });
+
+  final GameItem game;
+  final GameService gameService;
+  final VoidCallback onSaved;
+
+  @override
+  State<_EditReviewSheet> createState() => _EditReviewSheetState();
+}
+
+class _EditReviewSheetState extends State<_EditReviewSheet> {
+  late String? _review;
+  late bool _isLoading;
+  final _reviewController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _review = widget.game.media.userData.review;
+    _isLoading = false;
+    _reviewController.text = _review ?? '';
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 16,
+        right: 16,
+        top: 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Edit Review',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _reviewController,
+            decoration: const InputDecoration(
+              labelText: 'Review',
+              border: OutlineInputBorder(),
+              alignLabelWithHint: true,
+            ),
+            maxLines: 6,
+            onChanged: (value) {
+              setState(() {
+                _review = value.isEmpty ? null : value;
+              });
+            },
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _isLoading ? null : _save,
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final updatedUserData = widget.game.media.userData.copyWith(
+        review: _review,
+      );
+
+      final updatedMedia = widget.game.media.copyWith(
+        userData: updatedUserData,
+      );
+
+      final updatedGame = widget.game.copyWith(
+        media: updatedMedia,
+      );
+
+      await widget.gameService.update(updatedGame);
+
+      if (mounted) {
+        widget.onSaved();
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Review updated!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+}
+
+// ============================================================
+// Edit User Data Sheet (Status, Dates, Tags - NO Rating/Review)
+// ============================================================
 
 class _EditUserDataSheet extends StatefulWidget {
   const _EditUserDataSheet({
@@ -606,34 +975,24 @@ class _EditUserDataSheet extends StatefulWidget {
 
 class _EditUserDataSheetState extends State<_EditUserDataSheet> {
   late MediaStatus _status;
-  late int? _rating;
   late DateOnly? _startedOn;
   late DateOnly? _finishedOn;
-  late String? _review;
   late List<Tag> _tags;
   late bool _isLoading;
-  final _ratingController = TextEditingController();
-  final _reviewController = TextEditingController();
   final _tagController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _status = widget.game.media.userData.status;
-    _rating = widget.game.media.userData.rating;
     _startedOn = widget.game.media.userData.startedOn;
     _finishedOn = widget.game.media.userData.finishedOn;
-    _review = widget.game.media.userData.review;
     _tags = List.from(widget.game.media.userData.tags);
     _isLoading = false;
-    _ratingController.text = _rating?.toString() ?? '';
-    _reviewController.text = _review ?? '';
   }
 
   @override
   void dispose() {
-    _ratingController.dispose();
-    _reviewController.dispose();
     _tagController.dispose();
     super.dispose();
   }
@@ -681,21 +1040,6 @@ class _EditUserDataSheetState extends State<_EditUserDataSheet> {
             }).toList(),
             onChanged: (value) {
               if (value != null) setState(() => _status = value);
-            },
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _ratingController,
-            decoration: const InputDecoration(
-              labelText: 'Rating (0-100)',
-              border: OutlineInputBorder(),
-              helperText: 'Leave empty for no rating',
-            ),
-            keyboardType: TextInputType.number,
-            onChanged: (value) {
-              setState(() {
-                _rating = value.isEmpty ? null : int.tryParse(value);
-              });
             },
           ),
           const SizedBox(height: 12),
@@ -749,21 +1093,6 @@ class _EditUserDataSheetState extends State<_EditUserDataSheet> {
                   icon: const Icon(Icons.clear, size: 20),
                 ),
             ],
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _reviewController,
-            decoration: const InputDecoration(
-              labelText: 'Review',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
-            ),
-            maxLines: 4,
-            onChanged: (value) {
-              setState(() {
-                _review = value.isEmpty ? null : value;
-              });
-            },
           ),
           const SizedBox(height: 12),
           TextFormField(
@@ -859,10 +1188,8 @@ class _EditUserDataSheetState extends State<_EditUserDataSheet> {
     try {
       final updatedUserData = widget.game.media.userData.copyWith(
         status: _status,
-        rating: _rating,
         startedOn: _startedOn,
         finishedOn: _finishedOn,
-        review: _review,
         tags: _tags,
       );
 
@@ -894,7 +1221,349 @@ class _EditUserDataSheetState extends State<_EditUserDataSheet> {
   }
 }
 
-// ==================== Edit Game Metadata Sheet ====================
+// ============================================================
+// Edit Media Metadata Sheet
+// ============================================================
+
+class _EditMediaMetadataSheet extends StatefulWidget {
+  const _EditMediaMetadataSheet({
+    required this.game,
+    required this.gameService,
+    required this.onSaved,
+  });
+
+  final GameItem game;
+  final GameService gameService;
+  final VoidCallback onSaved;
+
+  @override
+  State<_EditMediaMetadataSheet> createState() =>
+      _EditMediaMetadataSheetState();
+}
+
+class _EditMediaMetadataSheetState extends State<_EditMediaMetadataSheet> {
+  late String _title;
+  late String? _description;
+  late String? _coverUrl;
+  late DateOnly? _releaseDate;
+  late List<domain_genre.Genre> _genres;
+  late List<domain_theme.Theme> _themes;
+  late List<domain_series.Series> _series;
+  late bool _isLoading;
+
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _coverUrlController = TextEditingController();
+  final _genreController = TextEditingController();
+  final _themeController = TextEditingController();
+  final _seriesController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _title = widget.game.media.metadata.title;
+    _description = widget.game.media.metadata.description;
+    _coverUrl = widget.game.media.metadata.coverUrl;
+    _releaseDate = widget.game.media.metadata.releaseDate;
+    _genres = List.from(widget.game.media.metadata.genres);
+    _themes = List.from(widget.game.media.metadata.themes);
+    _series = List.from(widget.game.media.metadata.series);
+    _isLoading = false;
+
+    _titleController.text = _title;
+    _descriptionController.text = _description ?? '';
+    _coverUrlController.text = _coverUrl ?? '';
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _coverUrlController.dispose();
+    _genreController.dispose();
+    _themeController.dispose();
+    _seriesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 16,
+        right: 16,
+        top: 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Edit Media Metadata',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+
+          // Title
+          TextFormField(
+            controller: _titleController,
+            decoration: const InputDecoration(
+              labelText: 'Title *',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) => _title = value,
+          ),
+          const SizedBox(height: 12),
+
+          // Description
+          TextFormField(
+            controller: _descriptionController,
+            decoration: const InputDecoration(
+              labelText: 'Description',
+              border: OutlineInputBorder(),
+              alignLabelWithHint: true,
+            ),
+            maxLines: 3,
+            onChanged: (value) => _description = value.isEmpty ? null : value,
+          ),
+          const SizedBox(height: 12),
+
+          // Cover URL
+          TextFormField(
+            controller: _coverUrlController,
+            decoration: const InputDecoration(
+              labelText: 'Cover URL',
+              border: OutlineInputBorder(),
+              helperText: 'Paste a direct image URL',
+            ),
+            keyboardType: TextInputType.url,
+            onChanged: (value) => _coverUrl = value.isEmpty ? null : value,
+          ),
+          const SizedBox(height: 12),
+
+          // Release Date
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: _selectReleaseDate,
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Release Date',
+                      border: OutlineInputBorder(),
+                    ),
+                    child: Text(_releaseDate?.toString() ?? 'Not set'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              if (_releaseDate != null)
+                IconButton(
+                  onPressed: () => setState(() => _releaseDate = null),
+                  icon: const Icon(Icons.clear, size: 20),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Genres
+          _buildTagInput(
+            label: 'Genres',
+            controller: _genreController,
+            items: _genres.map((g) => g.name).toList(),
+            onAdd: () => _addGenre(_genreController.text.trim()),
+            onRemove: (index) => setState(() => _genres.removeAt(index)),
+          ),
+          const SizedBox(height: 12),
+
+          // Themes
+          _buildTagInput(
+            label: 'Themes',
+            controller: _themeController,
+            items: _themes.map((t) => t.name).toList(),
+            onAdd: () => _addTheme(_themeController.text.trim()),
+            onRemove: (index) => setState(() => _themes.removeAt(index)),
+          ),
+          const SizedBox(height: 12),
+
+          // Series
+          _buildTagInput(
+            label: 'Series',
+            controller: _seriesController,
+            items: _series.map((s) => s.name).toList(),
+            onAdd: () => _addSeries(_seriesController.text.trim()),
+            onRemove: (index) => setState(() => _series.removeAt(index)),
+          ),
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _isLoading ? null : _save,
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagInput({
+    required String label,
+    required TextEditingController controller,
+    required List<String> items,
+    required VoidCallback onAdd,
+    required void Function(int) onRemove,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: onAdd,
+            ),
+          ),
+          onFieldSubmitted: (_) => onAdd(),
+        ),
+        if (items.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: items.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              return Chip(
+                label: Text(item),
+                onDeleted: () => onRemove(index),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _addGenre(String name) {
+    if (name.isNotEmpty && !_genres.any((g) => g.name == name)) {
+      setState(() {
+        _genres.add(domain_genre.Genre(id: -1, name: name));
+        _genreController.clear();
+      });
+    }
+  }
+
+  void _addTheme(String name) {
+    if (name.isNotEmpty && !_themes.any((t) => t.name == name)) {
+      setState(() {
+        _themes.add(domain_theme.Theme(id: -1, name: name));
+        _themeController.clear();
+      });
+    }
+  }
+
+  void _addSeries(String name) {
+    if (name.isNotEmpty && !_series.any((s) => s.name == name)) {
+      setState(() {
+        _series.add(domain_series.Series(id: -1, name: name));
+        _seriesController.clear();
+      });
+    }
+  }
+
+  Future<void> _selectReleaseDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _releaseDate != null
+          ? DateTime(_releaseDate!.year, _releaseDate!.month, _releaseDate!.day)
+          : DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null && mounted) {
+      setState(() => _releaseDate = DateOnly.fromDateTime(picked));
+    }
+  }
+
+  Future<void> _save() async {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Title cannot be empty')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final metadata = MediaMetadata(
+        title: _titleController.text.trim(),
+        description: _description,
+        coverUrl: _coverUrl,
+        releaseDate: _releaseDate,
+        genres: _genres,
+        themes: _themes,
+        series: _series,
+      );
+
+      await widget.gameService.updateMediaMetadata(widget.game.media.id, metadata);
+
+      if (mounted) {
+        widget.onSaved();
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Media metadata updated!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+}
+
+// ============================================================
+// Edit Game Metadata Sheet
+// ============================================================
 
 class _EditGameMetadataSheet extends StatefulWidget {
   const _EditGameMetadataSheet({
@@ -912,12 +1581,58 @@ class _EditGameMetadataSheet extends StatefulWidget {
 }
 
 class _EditGameMetadataSheetState extends State<_EditGameMetadataSheet> {
+  late List<String> _developerNames;
+  late List<String> _publisherNames;
   late bool _isLoading;
+  final _developerController = TextEditingController();
+  final _publisherController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _developerNames = [];
+    _publisherNames = [];
     _isLoading = false;
+    _loadContributorNames();
+  }
+
+  @override
+  void dispose() {
+    _developerController.dispose();
+    _publisherController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadContributorNames() async {
+    final developers = widget.game.gameMetadata.developers;
+    final publishers = widget.game.gameMetadata.publishers;
+
+    final devNames = <String>[];
+    for (final dev in developers) {
+      try {
+        final name = await widget.gameService.getContributorName(dev);
+        devNames.add(name);
+      } catch (_) {
+        devNames.add('Unknown');
+      }
+    }
+
+    final pubNames = <String>[];
+    for (final pub in publishers) {
+      try {
+        final name = await widget.gameService.getContributorName(pub);
+        pubNames.add(name);
+      } catch (_) {
+        pubNames.add('Unknown');
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _developerNames = devNames;
+        _publisherNames = pubNames;
+      });
+    }
   }
 
   @override
@@ -948,15 +1663,28 @@ class _EditGameMetadataSheetState extends State<_EditGameMetadataSheet> {
             'Edit Game Metadata',
             style: Theme.of(context).textTheme.titleLarge,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Note: Developers and Publishers cannot be edited yet.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey.shade600,
-            ),
+          const SizedBox(height: 16),
+
+          // Developers
+          _buildTagInput(
+            label: 'Developers',
+            controller: _developerController,
+            items: _developerNames,
+            onAdd: () => _addDeveloper(_developerController.text.trim()),
+            onRemove: (index) => setState(() => _developerNames.removeAt(index)),
+          ),
+          const SizedBox(height: 12),
+
+          // Publishers
+          _buildTagInput(
+            label: 'Publishers',
+            controller: _publisherController,
+            items: _publisherNames,
+            onAdd: () => _addPublisher(_publisherController.text.trim()),
+            onRemove: (index) => setState(() => _publisherNames.removeAt(index)),
           ),
           const SizedBox(height: 16),
-          const SizedBox(height: 16),
+
           Row(
             children: [
               Expanded(
@@ -975,7 +1703,7 @@ class _EditGameMetadataSheetState extends State<_EditGameMetadataSheet> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                      : const Text('Close'),
+                      : const Text('Save'),
                 ),
               ),
             ],
@@ -986,12 +1714,96 @@ class _EditGameMetadataSheetState extends State<_EditGameMetadataSheet> {
     );
   }
 
+  Widget _buildTagInput({
+    required String label,
+    required TextEditingController controller,
+    required List<String> items,
+    required VoidCallback onAdd,
+    required void Function(int) onRemove,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: onAdd,
+            ),
+          ),
+          onFieldSubmitted: (_) => onAdd(),
+        ),
+        if (items.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: items.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              return Chip(
+                label: Text(item),
+                onDeleted: () => onRemove(index),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _addDeveloper(String name) {
+    if (name.isNotEmpty && !_developerNames.contains(name)) {
+      setState(() {
+        _developerNames.add(name);
+        _developerController.clear();
+      });
+    }
+  }
+
+  void _addPublisher(String name) {
+    if (name.isNotEmpty && !_publisherNames.contains(name)) {
+      setState(() {
+        _publisherNames.add(name);
+        _publisherController.clear();
+      });
+    }
+  }
+
   Future<void> _save() async {
-    Navigator.pop(context);
+    setState(() => _isLoading = true);
+
+    try {
+      await widget.gameService.updateGameMetadataFromNames(
+        widget.game.media.id,
+        _developerNames,
+        _publisherNames,
+      );
+
+      if (mounted) {
+        widget.onSaved();
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Game metadata updated!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 }
 
-// ==================== Edit Game User Data Sheet ====================
+// ============================================================
+// Edit Game User Data Sheet
+// ============================================================
 
 class _EditGameUserDataSheet extends StatefulWidget {
   const _EditGameUserDataSheet({

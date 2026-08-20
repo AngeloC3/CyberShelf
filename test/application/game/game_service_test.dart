@@ -16,6 +16,9 @@ import 'package:cybershelf/domain/media/tag.dart' as domain;
 import 'package:cybershelf/domain/media/theme.dart' as domain;
 import 'package:cybershelf/domain/media_status.dart';
 import 'package:drift/drift.dart';
+import 'package:cybershelf/domain/media/genre.dart' as domain_genre;
+import 'package:cybershelf/domain/media/theme.dart' as domain_theme;
+import 'package:cybershelf/domain/media/series.dart' as domain_series;
 
 import '../../helpers/fake_game_repository.dart';
 
@@ -1143,6 +1146,487 @@ void main() {
 
         expect(result.gameUserData.playedModes, isEmpty);
         expect(result.gameUserData.playedPlatforms, isEmpty);
+      });
+    });
+
+    group('updateMediaMetadata', () {
+      late FakeGameRepository repository;
+      late GameService service;
+
+      setUp(() {
+        repository = FakeGameRepository();
+        service = GameService(repository, database);
+      });
+
+      test('updates media metadata successfully', () async {
+        // Create a game first
+        final game = await repository.create(
+          metadata: const MediaMetadata(
+            title: 'Original Title',
+            description: 'Original description',
+            coverUrl: 'https://example.com/original.jpg',
+          ),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        // Update with new metadata
+        final newReleaseDate = DateOnly(year: 2025, month: 12, day: 25);
+        final newMetadata = MediaMetadata(
+          title: 'Updated Title',
+          description: 'Updated description',
+          coverUrl: 'https://example.com/updated.jpg',
+          releaseDate: newReleaseDate,
+          genres: [
+            domain_genre.Genre(id: -1, name: 'Action'),
+            domain_genre.Genre(id: -1, name: 'RPG'),
+          ],
+          themes: [
+            domain_theme.Theme(id: -1, name: 'Fantasy'),
+          ],
+          series: [
+            domain_series.Series(id: -1, name: 'Test Series'),
+          ],
+        );
+
+        final result = await service.updateMediaMetadata(game.media.id, newMetadata);
+
+        // Verify metadata was updated
+        expect(result.media.metadata.title, 'Updated Title');
+        expect(result.media.metadata.description, 'Updated description');
+        expect(result.media.metadata.coverUrl, 'https://example.com/updated.jpg');
+        expect(result.media.metadata.releaseDate, newReleaseDate);
+
+        // Verify genres, themes, series were created
+        expect(result.media.metadata.genres, hasLength(2));
+        expect(result.media.metadata.genres[0].name, 'Action');
+        expect(result.media.metadata.genres[1].name, 'RPG');
+        expect(result.media.metadata.themes, hasLength(1));
+        expect(result.media.metadata.themes[0].name, 'Fantasy');
+        expect(result.media.metadata.series, hasLength(1));
+        expect(result.media.metadata.series[0].name, 'Test Series');
+
+        // Verify IDs were assigned (not temporary)
+        expect(result.media.metadata.genres[0].id, isNot(-1));
+        expect(result.media.metadata.themes[0].id, isNot(-1));
+        expect(result.media.metadata.series[0].id, isNot(-1));
+
+        // Verify database was updated
+        final stored = await service.getById(game.media.id);
+        expect(stored, isNot(null));
+        expect(stored!.media.metadata.title, 'Updated Title');
+      });
+
+      test('reuses existing genres, themes, and series by name', () async {
+        // Pre-create a genre, theme, and series
+        final existingGenreId = await database.into(database.genres).insert(
+          GenresCompanion.insert(name: 'Action'),
+        );
+        final existingThemeId = await database.into(database.themes).insert(
+          ThemesCompanion.insert(name: 'Fantasy'),
+        );
+        final existingSeriesId = await database.into(database.series).insert(
+          SeriesCompanion.insert(name: 'Test Series'),
+        );
+
+        // Create a game
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        // Update with metadata that includes existing items
+        final newMetadata = MediaMetadata(
+          title: 'Updated Title',
+          genres: [
+            domain_genre.Genre(id: -1, name: 'Action'), // Should reuse
+            domain_genre.Genre(id: -1, name: 'RPG'),   // Should create new
+          ],
+          themes: [
+            domain_theme.Theme(id: -1, name: 'Fantasy'), // Should reuse
+            domain_theme.Theme(id: -1, name: 'Sci-Fi'),  // Should create new
+          ],
+          series: [
+            domain_series.Series(id: -1, name: 'Test Series'), // Should reuse
+            domain_series.Series(id: -1, name: 'New Series'),  // Should create new
+          ],
+        );
+
+        final result = await service.updateMediaMetadata(game.media.id, newMetadata);
+
+        // Verify existing items were reused
+        expect(result.media.metadata.genres[0].id, existingGenreId);
+        expect(result.media.metadata.themes[0].id, existingThemeId);
+        expect(result.media.metadata.series[0].id, existingSeriesId);
+
+        // Verify new items were created
+        expect(result.media.metadata.genres[1].id, isNot(existingGenreId));
+        expect(result.media.metadata.themes[1].id, isNot(existingThemeId));
+        expect(result.media.metadata.series[1].id, isNot(existingSeriesId));
+
+        // Verify total records in database
+        final allGenres = await database.select(database.genres).get();
+        final allThemes = await database.select(database.themes).get();
+        final allSeries = await database.select(database.series).get();
+        expect(allGenres, hasLength(2));
+        expect(allThemes, hasLength(2));
+        expect(allSeries, hasLength(2));
+      });
+
+      test('preserves existing metadata when updating', () async {
+        // Create a game with complete metadata
+        final releaseDate = DateOnly(year: 2024, month: 11, day: 15);
+        final game = await repository.create(
+          metadata: MediaMetadata(
+            title: 'Original Title',
+            description: 'Original description',
+            coverUrl: 'https://example.com/original.jpg',
+            releaseDate: releaseDate,
+            genres: [
+              domain_genre.Genre(id: -1, name: 'Original Genre'),
+            ],
+          ),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        // First, resolve the genre to get a real ID
+        await service.updateMediaMetadata(game.media.id, game.media.metadata);
+
+        // Now update only the title
+        final newMetadata = MediaMetadata(
+          title: 'Updated Title',
+          description: game.media.metadata.description,
+          coverUrl: game.media.metadata.coverUrl,
+          releaseDate: game.media.metadata.releaseDate,
+          genres: game.media.metadata.genres,
+          themes: game.media.metadata.themes,
+          series: game.media.metadata.series,
+        );
+
+        final result = await service.updateMediaMetadata(game.media.id, newMetadata);
+
+        // Only title should change
+        expect(result.media.metadata.title, 'Updated Title');
+        expect(result.media.metadata.description, 'Original description');
+        expect(result.media.metadata.coverUrl, 'https://example.com/original.jpg');
+        expect(result.media.metadata.releaseDate, releaseDate);
+        expect(result.media.metadata.genres[0].name, 'Original Genre');
+      });
+
+      test('throws when game does not exist', () async {
+        expect(
+              () => service.updateMediaMetadata(
+            999,
+            const MediaMetadata(title: 'New Title'),
+          ),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('handles empty lists for genres, themes, and series', () async {
+        final game = await repository.create(
+          metadata: const MediaMetadata(
+            title: 'Test Game',
+            genres: [
+              domain_genre.Genre(id: -1, name: 'Action'),
+            ],
+          ),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        // Update with empty lists
+        final newMetadata = const MediaMetadata(
+          title: 'Updated Title',
+          genres: [],
+          themes: [],
+          series: [],
+        );
+
+        final result = await service.updateMediaMetadata(game.media.id, newMetadata);
+
+        expect(result.media.metadata.genres, isEmpty);
+        expect(result.media.metadata.themes, isEmpty);
+        expect(result.media.metadata.series, isEmpty);
+      });
+    });
+
+    group('updateGameMetadataFromNames', () {
+      late FakeGameRepository repository;
+      late GameService service;
+
+      setUp(() {
+        repository = FakeGameRepository();
+        service = GameService(repository, database);
+      });
+
+      test('updates game metadata with developers and publishers', () async {
+        // Create a game first
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        final result = await service.updateGameMetadataFromNames(
+          game.media.id,
+          ['Hideo Kojima', 'Shigeru Miyamoto'],
+          ['Nintendo', 'Konami'],
+        );
+
+        // Should have 2 developers and 2 publishers
+        expect(result.gameMetadata.developers, hasLength(2));
+        expect(result.gameMetadata.publishers, hasLength(2));
+
+        // Verify developers were created as people
+        expect(result.gameMetadata.developers[0].isPerson, isTrue);
+        expect(result.gameMetadata.developers[1].isPerson, isTrue);
+
+        // Verify publishers were created as companies
+        expect(result.gameMetadata.publishers[0].isCompany, isTrue);
+        expect(result.gameMetadata.publishers[1].isCompany, isTrue);
+
+        // Verify people and companies were created in database
+        final people = await database.select(database.people).get();
+        final companies = await database.select(database.companies).get();
+        expect(people.map((p) => p.name), containsAll(['Hideo Kojima', 'Shigeru Miyamoto']));
+        expect(companies.map((c) => c.name), containsAll(['Nintendo', 'Konami']));
+
+        // Verify contributors were created
+        final contributors = await database.select(database.contributors).get();
+        expect(contributors, hasLength(4));
+
+        // Verify game was updated
+        final stored = await service.getById(game.media.id);
+        expect(stored, isNot(null));
+        expect(stored!.gameMetadata.developers, hasLength(2));
+        expect(stored.gameMetadata.publishers, hasLength(2));
+      });
+
+      test('reuses existing people and companies by name', () async {
+        // Pre-create a person and company
+        await database.into(database.people).insert(
+          PeopleCompanion.insert(name: 'Hideo Kojima'),
+        );
+        await database.into(database.companies).insert(
+          CompaniesCompanion.insert(name: 'Nintendo'),
+        );
+
+        // Create a game
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        final result = await service.updateGameMetadataFromNames(
+          game.media.id,
+          ['Hideo Kojima', 'New Person'],
+          ['Nintendo', 'New Company'],
+        );
+
+        // Should reuse existing person and company
+        expect(result.gameMetadata.developers, hasLength(2));
+        expect(result.gameMetadata.publishers, hasLength(2));
+
+        // Verify no duplicate people/companies were created
+        final people = await database.select(database.people).get();
+        final companies = await database.select(database.companies).get();
+        expect(people, hasLength(2));
+        expect(companies, hasLength(2));
+        expect(people.map((p) => p.name), containsAll(['Hideo Kojima', 'New Person']));
+        expect(companies.map((c) => c.name), containsAll(['Nintendo', 'New Company']));
+      });
+
+      test('handles empty developer and publisher lists', () async {
+        // Create a game with some metadata
+        final personId = await database.into(database.people).insert(
+          PeopleCompanion.insert(name: 'Existing Developer'),
+        );
+        final contributorId = await database.into(database.contributors).insert(
+          ContributorsCompanion.insert(personId: Value(personId)),
+        );
+
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: GameMetadata(
+            developers: [
+              domain.Contributor(id: contributorId, personId: personId),
+            ],
+          ),
+          gameUserData: const GameUserData(),
+        );
+
+        // Update with empty lists
+        final result = await service.updateGameMetadataFromNames(
+          game.media.id,
+          [],
+          [],
+        );
+
+        // Should clear developers and publishers
+        expect(result.gameMetadata.developers, isEmpty);
+        expect(result.gameMetadata.publishers, isEmpty);
+
+        // Verify database was updated
+        final stored = await service.getById(game.media.id);
+        expect(stored, isNot(null));
+        expect(stored!.gameMetadata.developers, isEmpty);
+        expect(stored.gameMetadata.publishers, isEmpty);
+      });
+
+      test('throws when game does not exist', () async {
+        expect(
+              () => service.updateGameMetadataFromNames(
+            999,
+            ['Developer'],
+            ['Publisher'],
+          ),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('handles duplicate names in lists - reuses existing entries', () async {
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        final result = await service.updateGameMetadataFromNames(
+          game.media.id,
+          ['Duplicate', 'Duplicate'],
+          ['Duplicate Pub', 'Duplicate Pub'],
+        );
+
+        // Should have 2 developers and 2 publishers (both entries preserved)
+        expect(result.gameMetadata.developers, hasLength(2));
+        expect(result.gameMetadata.publishers, hasLength(2));
+
+        // Both developers should be the same person (reused)
+        expect(result.gameMetadata.developers[0].isPerson, isTrue);
+        expect(result.gameMetadata.developers[1].isPerson, isTrue);
+
+        // Both should have the SAME person ID (reused by name)
+        expect(result.gameMetadata.developers[0].personId, result.gameMetadata.developers[1].personId);
+
+        // Both publishers should be the same company (reused)
+        expect(result.gameMetadata.publishers[0].isCompany, isTrue);
+        expect(result.gameMetadata.publishers[1].isCompany, isTrue);
+        expect(result.gameMetadata.publishers[0].companyId, result.gameMetadata.publishers[1].companyId);
+
+        // Verify only one person and one company were created in the database
+        final people = await database.select(database.people).get();
+        final companies = await database.select(database.companies).get();
+        expect(people, hasLength(1));
+        expect(companies, hasLength(1));
+        expect(people[0].name, 'Duplicate');
+        expect(companies[0].name, 'Duplicate Pub');
+
+        // Verify only two contributors were created (one for the person, one for the company)
+        final contributors = await database.select(database.contributors).get();
+        expect(contributors, hasLength(2));
+      });
+    });
+
+    // Add tests for private helper methods if needed
+    group('resolve helpers', () {
+      late GameService service;
+      late FakeGameRepository repository;
+
+      setUp(() {
+        repository = FakeGameRepository();
+        service = GameService(repository, database);
+      });
+
+      test('_resolveGenre creates new genre when it does not exist', () async {
+        // Use reflection to call private method, or test indirectly through updateMediaMetadata
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        final newMetadata = MediaMetadata(
+          title: 'Test Game',
+          genres: [
+            domain_genre.Genre(id: -1, name: 'New Unique Genre'),
+          ],
+        );
+
+        final result = await service.updateMediaMetadata(game.media.id, newMetadata);
+
+        expect(result.media.metadata.genres, hasLength(1));
+        expect(result.media.metadata.genres[0].id, isNot(-1));
+        expect(result.media.metadata.genres[0].name, 'New Unique Genre');
+
+        // Verify genre exists in database
+        final genres = await database.select(database.genres).get();
+        expect(genres, hasLength(1));
+        expect(genres[0].name, 'New Unique Genre');
+      });
+
+      test('_resolveTheme creates new theme when it does not exist', () async {
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        final newMetadata = MediaMetadata(
+          title: 'Test Game',
+          themes: [
+            domain_theme.Theme(id: -1, name: 'New Unique Theme'),
+          ],
+        );
+
+        final result = await service.updateMediaMetadata(game.media.id, newMetadata);
+
+        expect(result.media.metadata.themes, hasLength(1));
+        expect(result.media.metadata.themes[0].id, isNot(-1));
+        expect(result.media.metadata.themes[0].name, 'New Unique Theme');
+
+        final themes = await database.select(database.themes).get();
+        expect(themes, hasLength(1));
+        expect(themes[0].name, 'New Unique Theme');
+      });
+
+      test('_resolveSeries creates new series when it does not exist', () async {
+        final game = await repository.create(
+          metadata: const MediaMetadata(title: 'Test Game'),
+          userData: const MediaUserData(status: MediaStatus.planned),
+          gameMetadata: const GameMetadata(),
+          gameUserData: const GameUserData(),
+        );
+
+        final newMetadata = MediaMetadata(
+          title: 'Test Game',
+          series: [
+            domain_series.Series(id: -1, name: 'New Unique Series'),
+          ],
+        );
+
+        final result = await service.updateMediaMetadata(game.media.id, newMetadata);
+
+        expect(result.media.metadata.series, hasLength(1));
+        expect(result.media.metadata.series[0].id, isNot(-1));
+        expect(result.media.metadata.series[0].name, 'New Unique Series');
+
+        final series = await database.select(database.series).get();
+        expect(series, hasLength(1));
+        expect(series[0].name, 'New Unique Series');
       });
     });
   });

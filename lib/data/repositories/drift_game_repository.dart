@@ -107,12 +107,18 @@ class DriftGameRepository implements GameRepository {
     return _database.transaction(() async {
       final updatedMedia = await _mediaRepository.update(game.media);
 
+      // Delete existing game metadata
       await (_database.delete(_database.gameDevelopers)
         ..where((d) => d.mediaId.equals(game.media.id)))
           .go();
       await (_database.delete(_database.gamePublishers)
         ..where((p) => p.mediaId.equals(game.media.id)))
           .go();
+
+      // Insert updated game metadata
+      await _insertGameMetadata(game.media.id, game.gameMetadata);
+
+      // Delete existing game user data
       await (_database.delete(_database.gamePlayedModes)
         ..where((m) => m.mediaId.equals(game.media.id)))
           .go();
@@ -120,7 +126,7 @@ class DriftGameRepository implements GameRepository {
         ..where((p) => p.mediaId.equals(game.media.id)))
           .go();
 
-      await _insertGameMetadata(game.media.id, game.gameMetadata);
+      // Insert updated game user data
       await _insertGameUserData(game.media.id, game.gameUserData);
 
       return GameItem(
