@@ -27,6 +27,7 @@ class _ManualAddGamePageState extends State<ManualAddGamePage> {
   final _coverUrlController = TextEditingController();
   final _genreController = TextEditingController();
   final _themeController = TextEditingController();
+  final _seriesController = TextEditingController();
   final _developerController = TextEditingController();
   final _publisherController = TextEditingController();
 
@@ -34,6 +35,7 @@ class _ManualAddGamePageState extends State<ManualAddGamePage> {
   MediaStatus _status = MediaStatus.planned;
   final List<String> _genres = [];
   final List<String> _themes = [];
+  final List<String> _series = [];
   final List<String> _developers = [];
   final List<String> _publishers = [];
   final Set<GameMode> _availableModes = {};
@@ -48,6 +50,7 @@ class _ManualAddGamePageState extends State<ManualAddGamePage> {
     _coverUrlController.dispose();
     _genreController.dispose();
     _themeController.dispose();
+    _seriesController.dispose();
     _developerController.dispose();
     _publisherController.dispose();
     super.dispose();
@@ -165,6 +168,16 @@ class _ManualAddGamePageState extends State<ManualAddGamePage> {
                 items: _themes,
                 onAdd: () => _addItem(_themeController, _themes),
                 onRemove: (index) => setState(() => _themes.removeAt(index)),
+              ),
+              const SizedBox(height: 16),
+
+              // Series
+              _buildTagInput(
+                label: 'Series',
+                controller: _seriesController,
+                items: _series,
+                onAdd: () => _addItem(_seriesController, _series),
+                onRemove: (index) => setState(() => _series.removeAt(index)),
               ),
               const SizedBox(height: 16),
 
@@ -361,6 +374,7 @@ class _ManualAddGamePageState extends State<ManualAddGamePage> {
             : null,
         genreNames: _genres,
         themeNames: _themes,
+        seriesNames: _series,
         developerNames: _developers,
         publisherNames: _publishers,
         availableModes: _availableModes.toList(),

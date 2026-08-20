@@ -278,6 +278,11 @@ class _GameDetailPageState extends State<GameDetailPage> {
                 'Themes',
                 game.media.metadata.themes.map((t) => t.name).join(', '),
               ),
+            if (game.media.metadata.series.isNotEmpty)
+              _buildInfoRow(
+                'Series',
+                game.media.metadata.series.map((s) => s.name).join(', '),
+              ),
           ],
         ),
       ),

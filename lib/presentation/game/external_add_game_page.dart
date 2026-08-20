@@ -511,6 +511,13 @@ class _GamePreviewSheetState extends State<_GamePreviewSheet> {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
+                    if (result.series.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Series: ${result.series.join(', ')}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                     if (result.developers.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(

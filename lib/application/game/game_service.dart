@@ -10,6 +10,7 @@ import 'package:cybershelf/domain/game/game_mode.dart';
 import 'package:cybershelf/domain/game/game_platform.dart';
 import 'package:cybershelf/domain/media/contributor.dart' as domain;
 import 'package:cybershelf/domain/media/genre.dart' as domain;
+import 'package:cybershelf/domain/media/series.dart' as domain;
 import 'package:cybershelf/domain/media/media_user_data.dart';
 import 'package:cybershelf/domain/date_only.dart';
 import 'package:cybershelf/domain/media/media_metadata.dart';
@@ -118,6 +119,26 @@ class GameService {
       themeIds.add(themeId);
     }
 
+    // Resolve series
+    final seriesIds = <int>[];
+    for (final seriesName in result.series) {
+      final existingSeries = await (_database.select(_database.series)
+        ..where((s) => s.name.equals(seriesName)))
+          .getSingleOrNull();
+
+      int seriesId;
+      if (existingSeries != null) {
+        seriesId = existingSeries.id;
+      } else {
+        seriesId = await _database.into(_database.series).insert(
+          SeriesCompanion.insert(
+            name: seriesName,
+          ),
+        );
+      }
+      seriesIds.add(seriesId);
+    }
+
     // Build domain genres with local IDs
     final domainGenres = genreIds.asMap().entries.map((entry) {
       final index = entry.key;
@@ -138,6 +159,16 @@ class GameService {
       );
     }).toList();
 
+    // Build domain series with local IDs
+    final domainSeries = seriesIds.asMap().entries.map((entry) {
+      final index = entry.key;
+      final id = entry.value;
+      return domain.Series(
+        id: id,
+        name: result.series[index],
+      );
+    }).toList();
+
     // Build the media metadata
     final metadata = MediaMetadata(
       title: result.title,
@@ -145,6 +176,7 @@ class GameService {
       releaseDate: result.releaseDate,
       genres: domainGenres,
       themes: domainThemes,
+      series: domainSeries,
     );
 
     // Create game metadata with available modes first, then resolve developers and publishers
@@ -178,6 +210,7 @@ class GameService {
     DateOnly? releaseDate,
     List<String> genreNames = const [],
     List<String> themeNames = const [],
+    List<String> seriesNames = const [],
     List<String> developerNames = const [],
     List<String> publisherNames = const [],
     List<GameMode> availableModes = const [],
@@ -216,6 +249,19 @@ class GameService {
       themeIds.add(id);
     }
 
+    // Resolve series
+    final seriesIds = <int>[];
+    for (final name in seriesNames) {
+      final existing = await (_database.select(_database.series)
+        ..where((s) => s.name.equals(name))).getSingleOrNull();
+      final id = existing != null
+          ? existing.id
+          : await _database.into(_database.series).insert(
+        SeriesCompanion.insert(name: name),
+      );
+      seriesIds.add(id);
+    }
+
     // Build domain models
     final genres = genreIds.asMap().entries.map((entry) {
       final index = entry.key;
@@ -227,6 +273,11 @@ class GameService {
       return domain.Theme(id: entry.value, name: themeNames[index]);
     }).toList();
 
+    final series = seriesIds.asMap().entries.map((entry) {
+      final index = entry.key;
+      return domain.Series(id: entry.value, name: seriesNames[index]);
+    }).toList();
+
     final metadata = MediaMetadata(
       title: title,
       description: description,
@@ -234,6 +285,7 @@ class GameService {
       releaseDate: releaseDate,
       genres: genres,
       themes: themes,
+      series: series,
     );
 
     final userData = MediaUserData(status: status);

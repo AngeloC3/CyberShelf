@@ -1,7 +1,9 @@
+// lib/domain/media/media_metadata.dart
 import 'package:cybershelf/domain/date_only.dart';
 import 'package:cybershelf/domain/media/external_id.dart';
 import 'package:cybershelf/domain/media/genre.dart';
 import 'package:cybershelf/domain/media/theme.dart';
+import 'package:cybershelf/domain/media/series.dart';
 
 class MediaMetadata {
   const MediaMetadata({
@@ -11,6 +13,7 @@ class MediaMetadata {
     this.releaseDate,
     this.genres = const [],
     this.themes = const [],
+    this.series = const [],
     this.externalIds = const [],
   });
 
@@ -20,6 +23,7 @@ class MediaMetadata {
   final DateOnly? releaseDate;
   final List<Genre> genres;
   final List<Theme> themes;
+  final List<Series> series;
   final List<ExternalId> externalIds;
 
   MediaMetadata copyWith({
@@ -29,6 +33,7 @@ class MediaMetadata {
     Object? releaseDate = _unset,
     List<Genre>? genres,
     List<Theme>? themes,
+    List<Series>? series,
     List<ExternalId>? externalIds,
   }) {
     return MediaMetadata(
@@ -44,6 +49,7 @@ class MediaMetadata {
           : releaseDate as DateOnly?,
       genres: genres ?? this.genres,
       themes: themes ?? this.themes,
+      series: series ?? this.series,
       externalIds: externalIds ?? this.externalIds,
     );
   }

@@ -4589,6 +4589,414 @@ class MediaThemesCompanion extends UpdateCompanion<MediaTheme> {
   }
 }
 
+class $SeriesTable extends Series with TableInfo<$SeriesTable, Sery> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SeriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'series';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Sery> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Sery map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Sery(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+    );
+  }
+
+  @override
+  $SeriesTable createAlias(String alias) {
+    return $SeriesTable(attachedDatabase, alias);
+  }
+}
+
+class Sery extends DataClass implements Insertable<Sery> {
+  final int id;
+  final String name;
+  const Sery({required this.id, required this.name});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    return map;
+  }
+
+  SeriesCompanion toCompanion(bool nullToAbsent) {
+    return SeriesCompanion(id: Value(id), name: Value(name));
+  }
+
+  factory Sery.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Sery(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+    };
+  }
+
+  Sery copyWith({int? id, String? name}) =>
+      Sery(id: id ?? this.id, name: name ?? this.name);
+  Sery copyWithCompanion(SeriesCompanion data) {
+    return Sery(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Sery(')
+          ..write('id: $id, ')
+          ..write('name: $name')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Sery && other.id == this.id && other.name == this.name);
+}
+
+class SeriesCompanion extends UpdateCompanion<Sery> {
+  final Value<int> id;
+  final Value<String> name;
+  const SeriesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+  });
+  SeriesCompanion.insert({this.id = const Value.absent(), required String name})
+    : name = Value(name);
+  static Insertable<Sery> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+    });
+  }
+
+  SeriesCompanion copyWith({Value<int>? id, Value<String>? name}) {
+    return SeriesCompanion(id: id ?? this.id, name: name ?? this.name);
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeriesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MediaSeriesTable extends MediaSeries
+    with TableInfo<$MediaSeriesTable, MediaSery> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MediaSeriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _mediaIdMeta = const VerificationMeta(
+    'mediaId',
+  );
+  @override
+  late final GeneratedColumn<int> mediaId = GeneratedColumn<int>(
+    'media_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES media (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _seriesIdMeta = const VerificationMeta(
+    'seriesId',
+  );
+  @override
+  late final GeneratedColumn<int> seriesId = GeneratedColumn<int>(
+    'series_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES series (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [mediaId, seriesId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'media_series';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MediaSery> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('media_id')) {
+      context.handle(
+        _mediaIdMeta,
+        mediaId.isAcceptableOrUnknown(data['media_id']!, _mediaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mediaIdMeta);
+    }
+    if (data.containsKey('series_id')) {
+      context.handle(
+        _seriesIdMeta,
+        seriesId.isAcceptableOrUnknown(data['series_id']!, _seriesIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_seriesIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {mediaId, seriesId};
+  @override
+  MediaSery map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MediaSery(
+      mediaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}media_id'],
+      )!,
+      seriesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}series_id'],
+      )!,
+    );
+  }
+
+  @override
+  $MediaSeriesTable createAlias(String alias) {
+    return $MediaSeriesTable(attachedDatabase, alias);
+  }
+}
+
+class MediaSery extends DataClass implements Insertable<MediaSery> {
+  final int mediaId;
+  final int seriesId;
+  const MediaSery({required this.mediaId, required this.seriesId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['media_id'] = Variable<int>(mediaId);
+    map['series_id'] = Variable<int>(seriesId);
+    return map;
+  }
+
+  MediaSeriesCompanion toCompanion(bool nullToAbsent) {
+    return MediaSeriesCompanion(
+      mediaId: Value(mediaId),
+      seriesId: Value(seriesId),
+    );
+  }
+
+  factory MediaSery.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MediaSery(
+      mediaId: serializer.fromJson<int>(json['mediaId']),
+      seriesId: serializer.fromJson<int>(json['seriesId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'mediaId': serializer.toJson<int>(mediaId),
+      'seriesId': serializer.toJson<int>(seriesId),
+    };
+  }
+
+  MediaSery copyWith({int? mediaId, int? seriesId}) => MediaSery(
+    mediaId: mediaId ?? this.mediaId,
+    seriesId: seriesId ?? this.seriesId,
+  );
+  MediaSery copyWithCompanion(MediaSeriesCompanion data) {
+    return MediaSery(
+      mediaId: data.mediaId.present ? data.mediaId.value : this.mediaId,
+      seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaSery(')
+          ..write('mediaId: $mediaId, ')
+          ..write('seriesId: $seriesId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(mediaId, seriesId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MediaSery &&
+          other.mediaId == this.mediaId &&
+          other.seriesId == this.seriesId);
+}
+
+class MediaSeriesCompanion extends UpdateCompanion<MediaSery> {
+  final Value<int> mediaId;
+  final Value<int> seriesId;
+  final Value<int> rowid;
+  const MediaSeriesCompanion({
+    this.mediaId = const Value.absent(),
+    this.seriesId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MediaSeriesCompanion.insert({
+    required int mediaId,
+    required int seriesId,
+    this.rowid = const Value.absent(),
+  }) : mediaId = Value(mediaId),
+       seriesId = Value(seriesId);
+  static Insertable<MediaSery> custom({
+    Expression<int>? mediaId,
+    Expression<int>? seriesId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (mediaId != null) 'media_id': mediaId,
+      if (seriesId != null) 'series_id': seriesId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MediaSeriesCompanion copyWith({
+    Value<int>? mediaId,
+    Value<int>? seriesId,
+    Value<int>? rowid,
+  }) {
+    return MediaSeriesCompanion(
+      mediaId: mediaId ?? this.mediaId,
+      seriesId: seriesId ?? this.seriesId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (mediaId.present) {
+      map['media_id'] = Variable<int>(mediaId.value);
+    }
+    if (seriesId.present) {
+      map['series_id'] = Variable<int>(seriesId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaSeriesCompanion(')
+          ..write('mediaId: $mediaId, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4615,6 +5023,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GamePublishersTable gamePublishers = $GamePublishersTable(this);
   late final $ThemesTable themes = $ThemesTable(this);
   late final $MediaThemesTable mediaThemes = $MediaThemesTable(this);
+  late final $SeriesTable series = $SeriesTable(this);
+  late final $MediaSeriesTable mediaSeries = $MediaSeriesTable(this);
   late final Index mediaTypeIdx = Index(
     'media_type_idx',
     'CREATE INDEX media_type_idx ON media (media_type)',
@@ -4651,6 +5061,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     gamePublishers,
     themes,
     mediaThemes,
+    series,
+    mediaSeries,
     mediaTypeIdx,
     externalIdsMediaSourceIdx,
     externalIdsSourceExternalIdIdx,
@@ -4789,6 +5201,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('media_themes', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'media',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('media_series', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'series',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('media_series', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -4932,6 +5358,24 @@ final class $$MediaTableReferences
     ).filter((f) => f.mediaId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_mediaThemesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$MediaSeriesTable, List<MediaSery>>
+  _mediaSeriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.mediaSeries,
+    aliasName: 'media__id__media_series__media_id',
+  );
+
+  $$MediaSeriesTableProcessedTableManager get mediaSeriesRefs {
+    final manager = $$MediaSeriesTableTableManager(
+      $_db,
+      $_db.mediaSeries,
+    ).filter((f) => f.mediaId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_mediaSeriesRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -5133,6 +5577,31 @@ class $$MediaTableFilterComposer extends Composer<_$AppDatabase, $MediaTable> {
           }) => $$MediaThemesTableFilterComposer(
             $db: $db,
             $table: $db.mediaThemes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> mediaSeriesRefs(
+    Expression<bool> Function($$MediaSeriesTableFilterComposer f) f,
+  ) {
+    final $$MediaSeriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.mediaSeries,
+      getReferencedColumn: (t) => t.mediaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MediaSeriesTableFilterComposer(
+            $db: $db,
+            $table: $db.mediaSeries,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5368,6 +5837,31 @@ class $$MediaTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> mediaSeriesRefs<T extends Object>(
+    Expression<T> Function($$MediaSeriesTableAnnotationComposer a) f,
+  ) {
+    final $$MediaSeriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.mediaSeries,
+      getReferencedColumn: (t) => t.mediaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MediaSeriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.mediaSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$MediaTableTableManager
@@ -5391,6 +5885,7 @@ class $$MediaTableTableManager
             bool mediaTagsRefs,
             bool gamesRefs,
             bool mediaThemesRefs,
+            bool mediaSeriesRefs,
           })
         > {
   $$MediaTableTableManager(_$AppDatabase db, $MediaTable table)
@@ -5443,6 +5938,7 @@ class $$MediaTableTableManager
                 mediaTagsRefs = false,
                 gamesRefs = false,
                 mediaThemesRefs = false,
+                mediaSeriesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -5454,6 +5950,7 @@ class $$MediaTableTableManager
                     if (mediaTagsRefs) db.mediaTags,
                     if (gamesRefs) db.games,
                     if (mediaThemesRefs) db.mediaThemes,
+                    if (mediaSeriesRefs) db.mediaSeries,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -5597,6 +6094,27 @@ class $$MediaTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (mediaSeriesRefs)
+                        await $_getPrefetchedData<
+                          MediaData,
+                          $MediaTable,
+                          MediaSery
+                        >(
+                          currentTable: table,
+                          referencedTable: $$MediaTableReferences
+                              ._mediaSeriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MediaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).mediaSeriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.mediaId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -5625,6 +6143,7 @@ typedef $$MediaTableProcessedTableManager =
         bool mediaTagsRefs,
         bool gamesRefs,
         bool mediaThemesRefs,
+        bool mediaSeriesRefs,
       })
     >;
 typedef $$MediaMetadataTableCreateCompanionBuilder =
@@ -10447,6 +10966,569 @@ typedef $$MediaThemesTableProcessedTableManager =
       MediaTheme,
       PrefetchHooks Function({bool mediaId, bool themeId})
     >;
+typedef $$SeriesTableCreateCompanionBuilder = SeriesCompanion Function({
+  Value<int> id,
+  required String name,
+});
+typedef $$SeriesTableUpdateCompanionBuilder = SeriesCompanion Function({
+  Value<int> id,
+  Value<String> name,
+});
+
+final class $$SeriesTableReferences
+    extends BaseReferences<_$AppDatabase, $SeriesTable, Sery> {
+  $$SeriesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$MediaSeriesTable, List<MediaSery>>
+  _mediaSeriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.mediaSeries,
+    aliasName: 'series__id__media_series__series_id',
+  );
+
+  $$MediaSeriesTableProcessedTableManager get mediaSeriesRefs {
+    final manager = $$MediaSeriesTableTableManager(
+      $_db,
+      $_db.mediaSeries,
+    ).filter((f) => f.seriesId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_mediaSeriesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$SeriesTableFilterComposer
+    extends Composer<_$AppDatabase, $SeriesTable> {
+  $$SeriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> mediaSeriesRefs(
+    Expression<bool> Function($$MediaSeriesTableFilterComposer f) f,
+  ) {
+    final $$MediaSeriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.mediaSeries,
+      getReferencedColumn: (t) => t.seriesId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MediaSeriesTableFilterComposer(
+            $db: $db,
+            $table: $db.mediaSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$SeriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SeriesTable> {
+  $$SeriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SeriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SeriesTable> {
+  $$SeriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  Expression<T> mediaSeriesRefs<T extends Object>(
+    Expression<T> Function($$MediaSeriesTableAnnotationComposer a) f,
+  ) {
+    final $$MediaSeriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.mediaSeries,
+      getReferencedColumn: (t) => t.seriesId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MediaSeriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.mediaSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$SeriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SeriesTable,
+          Sery,
+          $$SeriesTableFilterComposer,
+          $$SeriesTableOrderingComposer,
+          $$SeriesTableAnnotationComposer,
+          $$SeriesTableCreateCompanionBuilder,
+          $$SeriesTableUpdateCompanionBuilder,
+          (Sery, $$SeriesTableReferences),
+          Sery,
+          PrefetchHooks Function({bool mediaSeriesRefs})
+        > {
+  $$SeriesTableTableManager(_$AppDatabase db, $SeriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SeriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SeriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SeriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+          }) => SeriesCompanion(id: id, name: name),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String name,
+          }) => SeriesCompanion.insert(id: id, name: name),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $$SeriesTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({mediaSeriesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (mediaSeriesRefs) db.mediaSeries],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (mediaSeriesRefs)
+                    await $_getPrefetchedData<Sery, $SeriesTable, MediaSery>(
+                      currentTable: table,
+                      referencedTable: $$SeriesTableReferences
+                          ._mediaSeriesRefsTable(db),
+                      managerFromTypedResult: (p0) => $$SeriesTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).mediaSeriesRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.seriesId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SeriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SeriesTable,
+      Sery,
+      $$SeriesTableFilterComposer,
+      $$SeriesTableOrderingComposer,
+      $$SeriesTableAnnotationComposer,
+      $$SeriesTableCreateCompanionBuilder,
+      $$SeriesTableUpdateCompanionBuilder,
+      (Sery, $$SeriesTableReferences),
+      Sery,
+      PrefetchHooks Function({bool mediaSeriesRefs})
+    >;
+typedef $$MediaSeriesTableCreateCompanionBuilder =
+    MediaSeriesCompanion Function({
+      required int mediaId,
+      required int seriesId,
+      Value<int> rowid,
+    });
+typedef $$MediaSeriesTableUpdateCompanionBuilder =
+    MediaSeriesCompanion Function({
+      Value<int> mediaId,
+      Value<int> seriesId,
+      Value<int> rowid,
+    });
+
+final class $$MediaSeriesTableReferences
+    extends BaseReferences<_$AppDatabase, $MediaSeriesTable, MediaSery> {
+  $$MediaSeriesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $MediaTable _mediaIdTable(_$AppDatabase db) =>
+      db.media.createAlias('media_series__media_id__media__id');
+
+  $$MediaTableProcessedTableManager get mediaId {
+    final $_column = $_itemColumn<int>('media_id')!;
+
+    final manager = $$MediaTableTableManager(
+      $_db,
+      $_db.media,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_mediaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $SeriesTable _seriesIdTable(_$AppDatabase db) =>
+      db.series.createAlias('media_series__series_id__series__id');
+
+  $$SeriesTableProcessedTableManager get seriesId {
+    final $_column = $_itemColumn<int>('series_id')!;
+
+    final manager = $$SeriesTableTableManager(
+      $_db,
+      $_db.series,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_seriesIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$MediaSeriesTableFilterComposer
+    extends Composer<_$AppDatabase, $MediaSeriesTable> {
+  $$MediaSeriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$MediaTableFilterComposer get mediaId {
+    final $$MediaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mediaId,
+      referencedTable: $db.media,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MediaTableFilterComposer(
+            $db: $db,
+            $table: $db.media,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SeriesTableFilterComposer get seriesId {
+    final $$SeriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.series,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SeriesTableFilterComposer(
+            $db: $db,
+            $table: $db.series,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MediaSeriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MediaSeriesTable> {
+  $$MediaSeriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$MediaTableOrderingComposer get mediaId {
+    final $$MediaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mediaId,
+      referencedTable: $db.media,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MediaTableOrderingComposer(
+            $db: $db,
+            $table: $db.media,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SeriesTableOrderingComposer get seriesId {
+    final $$SeriesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.series,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SeriesTableOrderingComposer(
+            $db: $db,
+            $table: $db.series,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MediaSeriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MediaSeriesTable> {
+  $$MediaSeriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$MediaTableAnnotationComposer get mediaId {
+    final $$MediaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mediaId,
+      referencedTable: $db.media,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MediaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.media,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SeriesTableAnnotationComposer get seriesId {
+    final $$SeriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.series,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SeriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.series,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MediaSeriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MediaSeriesTable,
+          MediaSery,
+          $$MediaSeriesTableFilterComposer,
+          $$MediaSeriesTableOrderingComposer,
+          $$MediaSeriesTableAnnotationComposer,
+          $$MediaSeriesTableCreateCompanionBuilder,
+          $$MediaSeriesTableUpdateCompanionBuilder,
+          (MediaSery, $$MediaSeriesTableReferences),
+          MediaSery,
+          PrefetchHooks Function({bool mediaId, bool seriesId})
+        > {
+  $$MediaSeriesTableTableManager(_$AppDatabase db, $MediaSeriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MediaSeriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MediaSeriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MediaSeriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> mediaId = const Value.absent(),
+                Value<int> seriesId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MediaSeriesCompanion(
+                mediaId: mediaId,
+                seriesId: seriesId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int mediaId,
+                required int seriesId,
+                Value<int> rowid = const Value.absent(),
+              }) => MediaSeriesCompanion.insert(
+                mediaId: mediaId,
+                seriesId: seriesId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$MediaSeriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({mediaId = false, seriesId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (mediaId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.mediaId,
+                        referencedTable: $$MediaSeriesTableReferences
+                            ._mediaIdTable(db),
+                        referencedColumn: $$MediaSeriesTableReferences
+                            ._mediaIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+                    if (seriesId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.seriesId,
+                        referencedTable: $$MediaSeriesTableReferences
+                            ._seriesIdTable(db),
+                        referencedColumn: $$MediaSeriesTableReferences
+                            ._seriesIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MediaSeriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MediaSeriesTable,
+      MediaSery,
+      $$MediaSeriesTableFilterComposer,
+      $$MediaSeriesTableOrderingComposer,
+      $$MediaSeriesTableAnnotationComposer,
+      $$MediaSeriesTableCreateCompanionBuilder,
+      $$MediaSeriesTableUpdateCompanionBuilder,
+      (MediaSery, $$MediaSeriesTableReferences),
+      MediaSery,
+      PrefetchHooks Function({bool mediaId, bool seriesId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10488,4 +11570,8 @@ class $AppDatabaseManager {
       $$ThemesTableTableManager(_db, _db.themes);
   $$MediaThemesTableTableManager get mediaThemes =>
       $$MediaThemesTableTableManager(_db, _db.mediaThemes);
+  $$SeriesTableTableManager get series =>
+      $$SeriesTableTableManager(_db, _db.series);
+  $$MediaSeriesTableTableManager get mediaSeries =>
+      $$MediaSeriesTableTableManager(_db, _db.mediaSeries);
 }

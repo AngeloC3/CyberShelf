@@ -24,6 +24,8 @@ import 'package:cybershelf/data/database/tables/game/game_developers_table.dart'
 import 'package:cybershelf/data/database/tables/game/game_publishers_table.dart';
 import 'package:cybershelf/data/database/tables/themes_table.dart';
 import 'package:cybershelf/data/database/tables/media_themes_table.dart';
+import 'package:cybershelf/data/database/tables/series_table.dart';
+import 'package:cybershelf/data/database/tables/media_series_table.dart';
 
 import 'package:drift/native.dart';
 part 'app_database.g.dart';
@@ -48,7 +50,9 @@ part 'app_database.g.dart';
     GameDevelopers,
     GamePublishers,
     Themes,
-    MediaThemes
+    MediaThemes,
+    Series,
+    MediaSeries
   ],
 )
 class AppDatabase extends _$AppDatabase {

@@ -7,6 +7,7 @@ import 'package:cybershelf/domain/media/external_id.dart' as domain;
 import 'package:cybershelf/domain/media/genre.dart' as domain;
 import 'package:cybershelf/domain/media/tag.dart' as domain;
 import 'package:cybershelf/domain/media/theme.dart' as domain;
+import 'package:cybershelf/domain/media/series.dart' as domain;
 import 'package:cybershelf/domain/media_repository.dart';
 import 'package:cybershelf/domain/media_type.dart';
 
@@ -69,6 +70,15 @@ class DriftMediaRepository implements MediaRepository {
           MediaThemesCompanion.insert(
             mediaId: mediaId,
             themeId: theme.id,
+          ),
+        );
+      }
+
+      for (final series in metadata.series) {
+        await _database.into(_database.mediaSeries).insert(
+          MediaSeriesCompanion.insert(
+            mediaId: mediaId,
+            seriesId: series.id,
           ),
         );
       }
@@ -163,6 +173,25 @@ class DriftMediaRepository implements MediaRepository {
       );
     }).toList();
 
+    final seriesQuery = _database.select(_database.mediaSeries).join([
+      innerJoin(
+        _database.series,
+        _database.series.id.equalsExp(_database.mediaSeries.seriesId),
+      ),
+    ])
+      ..where(_database.mediaSeries.mediaId.equals(media.id));
+
+    final seriesRows = await seriesQuery.get();
+
+    final seriesList = seriesRows.map((row) {
+      final series = row.readTable(_database.series);
+
+      return domain.Series(
+        id: series.id,
+        name: series.name,
+      );
+    }).toList();
+
     final externalIdRows = await (_database.select(_database.externalIds)
       ..where((table) => table.mediaId.equals(media.id)))
         .get();
@@ -203,6 +232,7 @@ class DriftMediaRepository implements MediaRepository {
         releaseDate: metadata.releaseDate,
         genres: genres,
         themes: themes,
+        series: seriesList,
         externalIds: externalIds,
       ),
       userData: MediaUserData(
@@ -286,6 +316,25 @@ class DriftMediaRepository implements MediaRepository {
         );
       }).toList();
 
+      final seriesQuery = _database.select(_database.mediaSeries).join([
+        innerJoin(
+          _database.series,
+          _database.series.id.equalsExp(_database.mediaSeries.seriesId),
+        ),
+      ])
+        ..where(_database.mediaSeries.mediaId.equals(media.id));
+
+      final seriesRows = await seriesQuery.get();
+
+      final seriesList = seriesRows.map((row) {
+        final series = row.readTable(_database.series);
+
+        return domain.Series(
+          id: series.id,
+          name: series.name,
+        );
+      }).toList();
+
       final externalIdRows = await (_database.select(_database.externalIds)
         ..where((table) => table.mediaId.equals(media.id)))
           .get();
@@ -327,6 +376,7 @@ class DriftMediaRepository implements MediaRepository {
             releaseDate: metadata.releaseDate,
             genres: genres,
             themes: themes,
+            series: seriesList,
             externalIds: externalIds,
           ),
           userData: MediaUserData(
@@ -405,6 +455,19 @@ class DriftMediaRepository implements MediaRepository {
           MediaThemesCompanion.insert(
             mediaId: media.id,
             themeId: theme.id,
+          ),
+        );
+      }
+
+      await (_database.delete(_database.mediaSeries)
+        ..where((table) => table.mediaId.equals(media.id)))
+          .go();
+
+      for (final series in media.metadata.series) {
+        await _database.into(_database.mediaSeries).insert(
+          MediaSeriesCompanion.insert(
+            mediaId: media.id,
+            seriesId: series.id,
           ),
         );
       }
