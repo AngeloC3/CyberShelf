@@ -40,7 +40,7 @@ class CyberShelfApp extends ConsumerWidget {
     final isLoading = credentialState.isLoading;
     final hasError = credentialState.hasError;
     final error = credentialState.error;
-    final externalSource = credentialState.valueOrNull;
+    final externalSource = credentialState.value;
 
     return MaterialApp(
       title: 'CyberShelf',

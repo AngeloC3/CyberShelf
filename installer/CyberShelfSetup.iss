@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 ; Non-commercial use only.
 
-#define MyAppName "Cybershelf"
+#define MyAppName "CyberShelf"
 #define MyAppVersion "0.1.0+1"
 #define MyAppExeName "cybershelf.exe"
 #define MyAppAssocName MyAppName + " File"
@@ -17,8 +17,9 @@
 AppId={{2562B05D-5A79-4450-94AE-B70F61B9EB1A}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-;AppVerName={cm:NameAndVersion,{#EscapeConstArgument(MyAppName)},{#EscapeConstArgument(MyAppVersion)}}
-DefaultDirName=C:\MiscPrograms\{#MyAppName}
+; Installs to a top-level folder on whichever drive the user picks (e.g. C:\CyberShelf),
+; rather than burying it in AppData or Program Files. User can still browse to change it.
+DefaultDirName={drive:}\{#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 ; "ArchitecturesAllowed=x64compatible" specifies that Setup cannot run on anything but x64 and Windows 11 on Arm.
 ArchitecturesAllowed=x64compatible
@@ -27,8 +28,9 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 ; Uncomment the following line to use a 64-bit installer.
 ;SetupArchitecture=x64
-ChangesAssociations=yes
-DefaultGroupName=CyberShelf
+; Remove file associations if not needed
+; ChangesAssociations=yes
+DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 ; Remove the following line to run in administrative install mode (install for all users).
 PrivilegesRequired=lowest
@@ -46,18 +48,19 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "C:\Users\angel\Documents\Coding\CyberShelf\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\angel\Documents\Coding\CyberShelf\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\angel\Documents\Coding\CyberShelf\build\windows\x64\runner\Release\dartjni.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\angel\Documents\Coding\CyberShelf\build\windows\x64\runner\Release\flutter_windows.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\angel\Documents\Coding\CyberShelf\build\windows\x64\runner\Release\sqlite3.dll"; DestDir: "{app}"; Flags: ignoreversion
+; Copy the entire Release output folder rather than naming individual DLLs.
+; This automatically picks up flutter_windows.dll, sqlite3.dll, any plugin
+; DLLs (e.g. from path_provider_windows), and the data\ folder, so new
+; dependencies don't silently go missing from the installer later.
+Source: "C:\Users\angel\Documents\Coding\CyberShelf\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.pdb,*.lib,*.exp,*.ilk"
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files.
 
-[Registry]
-Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}"; ValueType: string; ValueName: ""; ValueData: "{#MyAppAssocName}"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
-Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+; Remove or comment out the [Registry] section if you don't need file associations
+; [Registry]
+; Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
+; Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}"; ValueType: string; ValueName: ""; ValueData: "{#MyAppAssocName}"; Flags: uninsdeletekey
+; Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
+; Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -65,4 +68,3 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#DoubleAmp(MyAppName)}}"; Flags: nowait postinstall skipifsilent
-

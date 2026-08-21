@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cybershelf/application/credentials/credential_manager.dart';
 import 'package:cybershelf/data/external/igdb_game_source.dart';
@@ -27,41 +29,33 @@ final hasGameCredentialsProvider = FutureProvider<bool>((ref) async {
   return await manager.hasCredentials();
 });
 
-/// StateNotifier for managing credential state with refresh capability
-final credentialStateProvider = StateNotifierProvider<CredentialState, AsyncValue<ExternalGameSource?>>((ref) {
-  return CredentialState(ref);
-});
+/// AsyncNotifier for managing credential state with refresh capability
+final credentialStateProvider =
+AsyncNotifierProvider<CredentialState, ExternalGameSource?>(CredentialState.new);
 
-/// StateNotifier to manage credential state
-class CredentialState extends StateNotifier<AsyncValue<ExternalGameSource?>> {
-  CredentialState(this._ref) : super(const AsyncValue.loading()) {
-    loadCredentials();
+/// AsyncNotifier to manage credential state
+class CredentialState extends AsyncNotifier<ExternalGameSource?> {
+  @override
+  FutureOr<ExternalGameSource?> build() async {
+    return _load();
   }
 
-  final Ref _ref;
+  Future<ExternalGameSource?> _load() async {
+    final manager = ref.read(credentialManagerProvider);
+    final creds = await manager.getCredentials();
+
+    if (creds == null) return null;
+
+    return IgdbGameSource(
+      clientId: creds.clientId,
+      clientSecret: creds.clientSecret,
+    );
+  }
 
   /// Load credentials from storage
   Future<void> loadCredentials() async {
     state = const AsyncValue.loading();
-
-    try {
-      final manager = _ref.read(credentialManagerProvider);
-      final creds = await manager.getCredentials();
-
-      if (creds == null) {
-        state = const AsyncValue.data(null);
-        return;
-      }
-
-      final source = IgdbGameSource(
-        clientId: creds.clientId,
-        clientSecret: creds.clientSecret,
-      );
-
-      state = AsyncValue.data(source);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
+    state = await AsyncValue.guard(_load);
   }
 
   /// Called when credentials are updated in Settings
@@ -71,7 +65,7 @@ class CredentialState extends StateNotifier<AsyncValue<ExternalGameSource?>> {
 
   /// Clear credentials (for testing or logout)
   Future<void> clearCredentials() async {
-    final manager = _ref.read(credentialManagerProvider);
+    final manager = ref.read(credentialManagerProvider);
     await manager.deleteCredentials();
     state = const AsyncValue.data(null);
   }
