@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cybershelf/application/game/game_service.dart';
 import 'package:cybershelf/domain/game/external_game_source.dart';
 import 'package:cybershelf/presentation/game/game_detail_page.dart';
+import 'package:cybershelf/presentation/settings/settings_page.dart';
 
 class ExternalAddGamePage extends StatefulWidget {
   const ExternalAddGamePage({
@@ -10,11 +11,13 @@ class ExternalAddGamePage extends StatefulWidget {
     required this.gameService,
     required this.externalSource,
     this.onGameAdded,
+    this.onCredentialsUpdated,  // ← NEW: callback when credentials are updated
   });
 
   final GameService gameService;
   final ExternalGameSource externalSource;
   final VoidCallback? onGameAdded;
+  final VoidCallback? onCredentialsUpdated;  // ← NEW
 
   @override
   State<ExternalAddGamePage> createState() => _ExternalAddGamePageState();
@@ -58,12 +61,84 @@ class _ExternalAddGamePageState extends State<ExternalAddGamePage> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-        _results = [];
-      });
+      final errorMsg = e.toString().toLowerCase();
+
+      // Check for authentication errors
+      if (errorMsg.contains('authentication') ||
+          errorMsg.contains('401') ||
+          errorMsg.contains('unauthorized') ||
+          errorMsg.contains('invalid client')) {
+        setState(() {
+          _error = 'Authentication failed. Your API credentials may be invalid or expired.';
+          _isLoading = false;
+          _results = [];
+        });
+
+        // Show simple snackbar with no action - auto dismisses
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Invalid credentials. Please check your settings.'),
+              duration: Duration(seconds: 4),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        setState(() {
+          _error = 'Search failed: ${e.toString()}';
+          _isLoading = false;
+          _results = [];
+        });
+      }
     }
+  }
+
+  void _navigateToSettings() async {
+    // Navigate to settings and wait for result
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SettingsPage(
+          onGameCredentialsChanged: () {
+            // This will be called when credentials are saved
+            // But we need to notify the parent to refresh the externalSource
+          },
+        ),
+      ),
+    );
+
+    // If we returned from settings (result is true), refresh
+    if (result == true) {
+      // Notify parent that credentials were updated
+      widget.onCredentialsUpdated?.call();
+
+      // Close this page so the user goes back to GamesPage with fresh credentials
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  void _navigateToSettingsFromError() {
+    // Navigate to settings and wait for result
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SettingsPage(
+          onGameCredentialsChanged: () {
+            // Credentials were saved - we need to refresh
+          },
+        ),
+      ),
+    ).then((_) {
+      // When we come back, notify parent to refresh credentials
+      // Then close this page so user can try again with fresh credentials
+      widget.onCredentialsUpdated?.call();
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    });
   }
 
   @override
@@ -71,6 +146,13 @@ class _ExternalAddGamePageState extends State<ExternalAddGamePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Game'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: _navigateToSettings,
+            tooltip: 'Settings',
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(80),
           child: Padding(
@@ -95,6 +177,7 @@ class _ExternalAddGamePageState extends State<ExternalAddGamePage> {
                           setState(() {
                             _results = [];
                             _hasSearched = false;
+                            _error = null;
                           });
                         },
                       )
@@ -132,17 +215,25 @@ class _ExternalAddGamePageState extends State<ExternalAddGamePage> {
     }
 
     if (_error != null) {
+      final isAuthError = _error!.contains('Authentication') ||
+          _error!.contains('invalid') ||
+          _error!.contains('expired');
+
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              Icon(
+                isAuthError ? Icons.vpn_key : Icons.error_outline,
+                size: 48,
+                color: isAuthError ? Colors.orange : Colors.red,
+              ),
               const SizedBox(height: 16),
-              const Text(
-                'Search failed',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                isAuthError ? 'Credentials Issue' : 'Search Failed',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
@@ -151,10 +242,17 @@ class _ExternalAddGamePageState extends State<ExternalAddGamePage> {
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _search,
-                child: const Text('Try Again'),
-              ),
+              if (isAuthError)
+                FilledButton.icon(
+                  onPressed: _navigateToSettingsFromError,  // ← Use the version that closes the page
+                  icon: const Icon(Icons.settings),
+                  label: const Text('Configure Credentials'),
+                )
+              else
+                FilledButton(
+                  onPressed: _search,
+                  child: const Text('Try Again'),
+                ),
             ],
           ),
         ),
@@ -603,5 +701,4 @@ class _GamePreviewSheetState extends State<_GamePreviewSheet> {
       ),
     );
   }
-
 }

@@ -5,6 +5,7 @@ import 'package:cybershelf/domain/game/game_item.dart';
 import 'package:cybershelf/presentation/game/external_add_game_page.dart';
 import 'package:cybershelf/presentation/game/manual_add_game_page.dart';
 import 'package:cybershelf/presentation/game/game_detail_page.dart';
+import 'package:cybershelf/presentation/settings/settings_page.dart';
 import 'package:cybershelf/presentation/shared/rating_utils.dart';
 import 'package:cybershelf/presentation/shared/status_utils.dart';
 import 'package:cybershelf/presentation/filter/filter_models.dart';
@@ -23,10 +24,12 @@ class GamesPage extends StatefulWidget {
     super.key,
     required this.gameService,
     required this.externalSource,
+    this.onGameCredentialsChanged,
   });
 
   final GameService gameService;
-  final ExternalGameSource externalSource;
+  final ExternalGameSource? externalSource;
+  final VoidCallback? onGameCredentialsChanged;
 
   @override
   State<GamesPage> createState() => _GamesPageState();
@@ -212,6 +215,12 @@ class _GamesPageState extends State<GamesPage> {
               },
             )
           else ...[
+            // Settings button
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: _navigateToSettings,
+              tooltip: 'Settings',
+            ),
             IconButton(
               icon: Stack(
                 children: [
@@ -252,6 +261,20 @@ class _GamesPageState extends State<GamesPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddOptions,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _navigateToSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SettingsPage(
+          onGameCredentialsChanged: () {
+            // Notify parent that game credentials changed
+            widget.onGameCredentialsChanged?.call();
+          },
+        ),
       ),
     );
   }
@@ -381,6 +404,15 @@ class _GamesPageState extends State<GamesPage> {
             ListTile(
               leading: const Icon(Icons.search),
               title: const Text('Search External Source'),
+              subtitle: widget.externalSource != null
+                  ? null
+                  : Text(
+                'Configure in Settings',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _navigateToAddGame();
@@ -401,13 +433,31 @@ class _GamesPageState extends State<GamesPage> {
   }
 
   void _navigateToAddGame() {
+    // If no external source, navigate to settings with a message
+    if (widget.externalSource == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please configure IGDB credentials in Settings first.'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      _navigateToSettings();
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ExternalAddGamePage(
           gameService: widget.gameService,
-          externalSource: widget.externalSource,
+          externalSource: widget.externalSource!,
           onGameAdded: _refresh,
+          onCredentialsUpdated: () {
+            // When credentials are updated in ExternalAddGamePage,
+            // notify the parent (CyberShelfApp) to refresh
+            widget.onGameCredentialsChanged?.call();
+          },
         ),
       ),
     );
