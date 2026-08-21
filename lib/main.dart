@@ -52,6 +52,13 @@ class CyberShelfApp extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Logo
+              Image(
+                image: AssetImage('assets/logo.png'),
+                height: 64,
+                width: 64,
+              ),
+              SizedBox(height: 16),
               CircularProgressIndicator(),
               SizedBox(height: 16),
               Text('Loading credentials...'),

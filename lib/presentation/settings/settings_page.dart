@@ -47,6 +47,63 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/logo.png',
+              height: 32,
+              width: 32,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.videogame_asset,
+                size: 32,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('CyberShelf'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Version v0.1.0',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'A media collection manager.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Manage your games, books, movies, and more in one place.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,7 +123,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
           const Divider(height: 1),
 
-          // Placeholder for future settings
+          // About Section
           ListTile(
             leading: Icon(
               Icons.info_outline,
@@ -74,9 +131,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             title: const Text('About'),
             subtitle: const Text('CyberShelf v0.1.0'),
-            onTap: () {
-              // Placeholder - could show about dialog later
-            },
+            onTap: _showAboutDialog,
           ),
 
           const Divider(height: 1),
