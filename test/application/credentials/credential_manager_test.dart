@@ -4,10 +4,28 @@ import 'package:cybershelf/application/credentials/credential_storage.dart';
 
 void main() {
   group('CredentialManager Integration Tests', () {
-    test('full credential lifecycle works correctly', () async {
-      // 1. Initially no credentials
+    // Set up clean state before each test
+    setUp(() async {
+      // Clear the cache first
+      CredentialManager.instance.clearCache();
+
+      // Delete any existing credentials file
+      await CredentialStorage.delete();
+
+      // Verify clean state
       expect(await CredentialManager.instance.hasCredentials(), isFalse);
       expect(await CredentialManager.instance.getCredentials(), isNull);
+    });
+
+    // Clean up after each test
+    tearDown(() async {
+      // Clear cache and delete file
+      CredentialManager.instance.clearCache();
+      await CredentialStorage.delete();
+    });
+
+    test('full credential lifecycle works correctly', () async {
+      // 1. Initially no credentials (already verified in setUp)
 
       // 2. Save credentials
       final testCreds = IgdbCredentials(
@@ -39,7 +57,10 @@ void main() {
       // 6. Delete credentials
       await CredentialManager.instance.deleteCredentials();
 
-      // 7. Verify deleted
+      // 7. Clear cache to ensure we're reading from file (or lack thereof)
+      CredentialManager.instance.clearCache();
+
+      // 8. Verify deleted
       expect(await CredentialManager.instance.hasCredentials(), isFalse);
       expect(await CredentialManager.instance.getCredentials(), isNull);
       expect(await CredentialStorage.exists(), isFalse);
@@ -61,6 +82,10 @@ void main() {
       expect(loaded, isNotNull);
       expect(loaded!.clientId, 'persistence-id');
       expect(loaded.clientSecret, 'persistence-secret');
+
+      // Clean up
+      await CredentialManager.instance.deleteCredentials();
+      CredentialManager.instance.clearCache();
     });
   });
 }
