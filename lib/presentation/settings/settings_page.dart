@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cybershelf/application/credentials/credential_manager.dart';
 import 'package:cybershelf/application/credentials/credential_storage.dart';
+import 'package:cybershelf/application/credentials/providers.dart';
 import 'package:cybershelf/presentation/settings/widgets/credentials_section.dart';
 
-class SettingsPage extends StatefulWidget {
-  const SettingsPage({
-    super.key,
-    required this.onGameCredentialsChanged,  // ← Fixed parameter name
-  });
-
-  final VoidCallback onGameCredentialsChanged;  // ← Fixed field name
+class SettingsPage extends ConsumerStatefulWidget {
+  const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _hasCredentials = false;
   bool _isLoading = true;
 
@@ -32,9 +29,10 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _isLoading = false);
   }
 
-  void _onCredentialsSaved() {
+  void _onCredentialsSaved() async {
     _checkCredentials();
-    widget.onGameCredentialsChanged();  // ← Fixed callback call
+    // Refresh the credential state - this will notify all listeners
+    await ref.read(credentialStateProvider.notifier).onCredentialsUpdated();
   }
 
   Future<void> _copyPathToClipboard(String path) async {

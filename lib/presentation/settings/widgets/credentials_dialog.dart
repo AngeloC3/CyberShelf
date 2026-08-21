@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cybershelf/application/credentials/credential_manager.dart';
 import 'package:cybershelf/application/credentials/credential_storage.dart';
+import 'package:cybershelf/application/credentials/providers.dart';
 
-class CredentialsDialog extends StatefulWidget {
+class CredentialsDialog extends ConsumerStatefulWidget {
   const CredentialsDialog({
     super.key,
     required this.onCredentialsSaved,
@@ -11,10 +13,10 @@ class CredentialsDialog extends StatefulWidget {
   final VoidCallback onCredentialsSaved;
 
   @override
-  State<CredentialsDialog> createState() => _CredentialsDialogState();
+  ConsumerState<CredentialsDialog> createState() => _CredentialsDialogState();
 }
 
-class _CredentialsDialogState extends State<CredentialsDialog> {
+class _CredentialsDialogState extends ConsumerState<CredentialsDialog> {
   final _formKey = GlobalKey<FormState>();
   final _clientIdController = TextEditingController();
   final _clientSecretController = TextEditingController();
@@ -158,6 +160,9 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
       );
 
       await CredentialManager.instance.saveCredentials(credentials);
+
+      // Notify Riverpod that credentials changed
+      await ref.read(credentialStateProvider.notifier).onCredentialsUpdated();
 
       widget.onCredentialsSaved();
 

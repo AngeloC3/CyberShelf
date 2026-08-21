@@ -26,16 +26,24 @@ class IgdbCredentials {
 }
 
 /// Manages credential storage in a local JSON file
-///
-/// Credentials are stored in the app's executable directory:
-/// - Windows: [App Install Folder]\data\igdb_credentials.json
-/// - Android: /data/data/[package]/files/igdb_credentials.json
-/// - iOS: /var/mobile/Containers/Data/Application/[app]/Library/
 class CredentialStorage {
   CredentialStorage._();
 
   static const String _fileName = 'igdb_credentials.json';
   static const String _dataFolder = 'data';
+
+  // For testing - can be overridden
+  static String? _testDirectoryPath;
+
+  /// Set a custom test directory for testing
+  static void setTestDirectory(String path) {
+    _testDirectoryPath = path;
+  }
+
+  /// Reset to use the real directory
+  static void resetToRealDirectory() {
+    _testDirectoryPath = null;
+  }
 
   static Future<File> _getFile() async {
     final dir = await _getStorageDirectory();
@@ -43,19 +51,26 @@ class CredentialStorage {
   }
 
   static Future<Directory> _getStorageDirectory() async {
+    // If a test directory is set, use it
+    if (_testDirectoryPath != null) {
+      final testDir = Directory(_testDirectoryPath!);
+      if (!await testDir.exists()) {
+        await testDir.create(recursive: true);
+      }
+      return testDir;
+    }
+
     if (Platform.isWindows) {
       // On Windows, use the executable's directory
       final exeDir = File(Platform.resolvedExecutable).parent;
       final dataDir = Directory('${exeDir.path}/$_dataFolder');
 
-      // Create data folder if it doesn't exist
       if (!await dataDir.exists()) {
         await dataDir.create(recursive: true);
       }
 
       return dataDir;
     } else {
-      // On Android/iOS/macOS/Linux, use application support directory
       return await getApplicationSupportDirectory();
     }
   }
@@ -84,7 +99,6 @@ class CredentialStorage {
 
       return IgdbCredentials.fromJson(credsData);
     } catch (_) {
-      // Return null if file is corrupted or doesn't exist
       return null;
     }
   }

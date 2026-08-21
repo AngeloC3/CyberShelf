@@ -24,12 +24,10 @@ class GamesPage extends StatefulWidget {
     super.key,
     required this.gameService,
     required this.externalSource,
-    this.onGameCredentialsChanged,
   });
 
   final GameService gameService;
   final ExternalGameSource? externalSource;
-  final VoidCallback? onGameCredentialsChanged;
 
   @override
   State<GamesPage> createState() => _GamesPageState();
@@ -269,12 +267,7 @@ class _GamesPageState extends State<GamesPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SettingsPage(
-          onGameCredentialsChanged: () {
-            // Notify parent that game credentials changed
-            widget.onGameCredentialsChanged?.call();
-          },
-        ),
+        builder: (context) => const SettingsPage(),
       ),
     );
   }
@@ -453,11 +446,6 @@ class _GamesPageState extends State<GamesPage> {
           gameService: widget.gameService,
           externalSource: widget.externalSource!,
           onGameAdded: _refresh,
-          onCredentialsUpdated: () {
-            // When credentials are updated in ExternalAddGamePage,
-            // notify the parent (CyberShelfApp) to refresh
-            widget.onGameCredentialsChanged?.call();
-          },
         ),
       ),
     );

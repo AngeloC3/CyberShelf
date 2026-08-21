@@ -13,6 +13,8 @@ dependencies:
   path:
   path_provider:
   http:
+  flutter_riverpod:
+  riverpod_annotation:
 
 dev_dependencies:
   flutter_test:
@@ -20,7 +22,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   drift_dev:
   build_runner:
-  mockito:
+  riverpod_generator:
 
 flutter:
   uses-material-design: true

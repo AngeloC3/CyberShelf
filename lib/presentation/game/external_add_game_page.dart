@@ -1,29 +1,29 @@
 // lib/presentation/game/external_add_game_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cybershelf/application/credentials/providers.dart';
 import 'package:cybershelf/application/game/game_service.dart';
 import 'package:cybershelf/domain/game/external_game_source.dart';
 import 'package:cybershelf/presentation/game/game_detail_page.dart';
 import 'package:cybershelf/presentation/settings/settings_page.dart';
 
-class ExternalAddGamePage extends StatefulWidget {
+class ExternalAddGamePage extends ConsumerStatefulWidget {
   const ExternalAddGamePage({
     super.key,
     required this.gameService,
     required this.externalSource,
     this.onGameAdded,
-    this.onCredentialsUpdated,  // ← NEW: callback when credentials are updated
   });
 
   final GameService gameService;
   final ExternalGameSource externalSource;
   final VoidCallback? onGameAdded;
-  final VoidCallback? onCredentialsUpdated;  // ← NEW
 
   @override
-  State<ExternalAddGamePage> createState() => _ExternalAddGamePageState();
+  ConsumerState<ExternalAddGamePage> createState() => _ExternalAddGamePageState();
 }
 
-class _ExternalAddGamePageState extends State<ExternalAddGamePage> {
+class _ExternalAddGamePageState extends ConsumerState<ExternalAddGamePage> {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
   List<ExternalGameResult> _results = [];
@@ -94,51 +94,32 @@ class _ExternalAddGamePageState extends State<ExternalAddGamePage> {
     }
   }
 
-  void _navigateToSettings() async {
-    // Navigate to settings and wait for result
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SettingsPage(
-          onGameCredentialsChanged: () {
-            // This will be called when credentials are saved
-            // But we need to notify the parent to refresh the externalSource
-          },
-        ),
-      ),
-    );
-
-    // If we returned from settings (result is true), refresh
-    if (result == true) {
-      // Notify parent that credentials were updated
-      widget.onCredentialsUpdated?.call();
-
-      // Close this page so the user goes back to GamesPage with fresh credentials
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    }
-  }
-
-  void _navigateToSettingsFromError() {
-    // Navigate to settings and wait for result
+  void _navigateToSettings() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SettingsPage(
-          onGameCredentialsChanged: () {
-            // Credentials were saved - we need to refresh
-          },
-        ),
+        builder: (context) => const SettingsPage(),
       ),
-    ).then((_) {
-      // When we come back, notify parent to refresh credentials
-      // Then close this page so user can try again with fresh credentials
-      widget.onCredentialsUpdated?.call();
-      if (mounted) {
+    );
+  }
+
+  void _navigateToSettingsFromError() async {
+    // Navigate to settings
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SettingsPage(),
+      ),
+    );
+
+    // When we come back, check if credentials were updated
+    if (mounted) {
+      final state = ref.read(credentialStateProvider);
+      if (state.hasValue && state.value != null) {
+        // Credentials were updated - close this page
         Navigator.pop(context);
       }
-    });
+    }
   }
 
   @override
@@ -244,7 +225,7 @@ class _ExternalAddGamePageState extends State<ExternalAddGamePage> {
               const SizedBox(height: 16),
               if (isAuthError)
                 FilledButton.icon(
-                  onPressed: _navigateToSettingsFromError,  // ← Use the version that closes the page
+                  onPressed: _navigateToSettingsFromError,
                   icon: const Icon(Icons.settings),
                   label: const Text('Configure Credentials'),
                 )
